@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:uuid/uuid.dart'; // Añadir al pubspec.yaml: uuid: ^4.0.0
@@ -48,9 +50,37 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
     super.dispose();
   }
 
-  void _saveList() {
+  void _saveList() async{
     if (_formKey.currentState!.validate()) {
       final String id = widget.wishList?.id ?? const Uuid().v4();
+
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          throw Exception('Usuario no autenticado');
+        }
+        final FirebaseFirestore _db = FirebaseFirestore.instance;
+        await _db.collection('artifacts/__app_id/users/${user.uid}/wishlists')
+            .add({
+        //await _db.collection('wishlists').add({
+          'name': _nameController.text,
+          'description': _descriptionController.text,
+          'privacy': _selectedPrivacy.toString().split('.').last,
+          'sharedWithContactIds': _selectedPrivacy == ListPrivacy.shared
+              ? _selectedContactIds
+              : [],
+          'eventDate': _selectedEventDate?.toIso8601String(),
+          'allowMarkingAsBought': _allowMarkingAsBought,
+          'ownerId': user.uid,
+          //'items': widget.wishList?.items.map((item) => item.toMap()).toList() ?? [],
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de autenticación: $e')),
+        );
+        return;
+      }
+
       final WishList newList = WishList(
         id: id,
         name: _nameController.text,

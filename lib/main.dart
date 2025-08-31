@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
+import 'package:wishy/screens/auth_screen.dart';
 import 'firebase_options.dart'; // Importa el archivo de opciones de Firebase
 import 'package:wishy/screens/home_screen.dart';
 import 'dart:developer' as dev;
@@ -57,7 +59,28 @@ class _MyAppState extends State<MyApp> {
           backgroundColor: Colors.blueGrey,
         ),
       ),
-      home: const HomeScreen(), // La pantalla de inicio de la aplicación
+      // home: const HomeScreen(), // La pantalla de inicio de la aplicación
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // Muestra un indicador de carga mientras se verifica el estado
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          // Si hay un usuario logueado
+          if (snapshot.hasData) {
+            //if (isSharedIntent) {
+            //  return const ShareHandlerScreen();
+            //} else {
+              return const HomeScreen();
+            //}
+          }
+          // Si no hay un usuario logueado, muestra la pantalla de autenticación
+          return const AuthScreen();
+        },
+      ),
     );
   }
 

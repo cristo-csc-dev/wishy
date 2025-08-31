@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/mocks/mocks.dart';
 import 'package:wishy/models/wish_list.dart';
@@ -36,10 +37,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.logout),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Función de Búsqueda')));
+              _signOut();
+              //ScaffoldMessenger.of(context).showSnackBar(
+              //    const SnackBar(content: Text('Función de Búsqueda')));
             },
           ),
         ],
@@ -366,5 +368,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+  
+  void _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    // Después de cerrar sesión, el StreamBuilder en main.dart detectará el cambio
+    // y navegará automáticamente a la pantalla de autenticación.
+    // Simplemente cierra la pantalla de perfil.
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 }
