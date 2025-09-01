@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'create_user_screen.dart'; // Importa la nueva pantalla de creación
 
-class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -16,23 +17,21 @@ class _AuthScreenState extends State<AuthScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> _createUserWithEmailAndPassword() async {
+  Future<void> _signInWithEmailAndPassword() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      await _auth.createUserWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
     } on FirebaseAuthException catch (e) {
       String message;
-      if (e.code == 'weak-password') {
-        message = 'La contraseña es muy débil.';
-      } else if (e.code == 'email-already-in-use') {
-        message = 'El email ya está en uso.';
+      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+        message = 'Usuario o contraseña incorrectos.';
       } else {
         message = 'Error: ${e.message}';
       }
@@ -51,10 +50,17 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crear Cuenta'),
+        title: const Text('Iniciar sesión'),
         backgroundColor: Colors.indigo.shade500,
         foregroundColor: Colors.white,
       ),
@@ -64,7 +70,7 @@ class _AuthScreenState extends State<AuthScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Por favor, crea una cuenta para continuar.',
+              'Bienvenido. Por favor, inicia sesión para continuar.',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -95,7 +101,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _isLoading ? null : _createUserWithEmailAndPassword,
+              onPressed: _isLoading ? null : _signInWithEmailAndPassword,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo.shade500,
                 foregroundColor: Colors.white,
@@ -103,7 +109,18 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Crear Cuenta'),
+                  : const Text('Iniciar sesión'),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CreateUserScreen(),
+                  ),
+                );
+              },
+              child: const Text('¿No tienes una cuenta? Crea una aquí'),
             ),
           ],
         ),

@@ -60,20 +60,18 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           throw Exception('Usuario no autenticado');
         }
         final FirebaseFirestore _db = FirebaseFirestore.instance;
-        await _db.collection('artifacts/__app_id/users/${user.uid}/wishlists')
-            .add({
-        //await _db.collection('wishlists').add({
-          'name': _nameController.text,
-          'description': _descriptionController.text,
-          'privacy': _selectedPrivacy.toString().split('.').last,
-          'sharedWithContactIds': _selectedPrivacy == ListPrivacy.shared
-              ? _selectedContactIds
-              : [],
-          'eventDate': _selectedEventDate?.toIso8601String(),
-          'allowMarkingAsBought': _allowMarkingAsBought,
-          'ownerId': user.uid,
-          //'items': widget.wishList?.items.map((item) => item.toMap()).toList() ?? [],
-        });
+        var sharedContactIds = [];
+        await _db.collection('wishlists').add({
+        'name': _nameController.text,
+        'description': _descriptionController.text,
+        'privacy': _selectedPrivacy.toString().split('.').last,
+        'sharedWithContactIds': _selectedPrivacy == ListPrivacy.shared
+            ? sharedContactIds
+            : [],
+        'allowMarkingAsBought': _allowMarkingAsBought,
+        'ownerId': user.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error de autenticación: $e')),
