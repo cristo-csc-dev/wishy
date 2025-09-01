@@ -36,4 +36,21 @@ class WishItem {
       'boughtById': boughtById,
     };
   }
+
+  static WishItem fromMap(Map<String, dynamic> itemData) {
+    return WishItem(
+      id: itemData['id'] ?? '',
+      name: itemData['name'] ?? '',
+      productUrl: itemData['productUrl'],
+      estimatedPrice: (itemData['estimatedPrice'] != null)
+          ? (itemData['estimatedPrice'] as num).toDouble()
+          : null,
+      suggestedStore: itemData['suggestedStore'],
+      notes: itemData['notes'],
+      imageUrl: itemData['imageUrl'],
+      priority: itemData['priority'] ?? 3,
+      isBought: itemData['isBought'] ?? false,
+      boughtById: itemData['boughtById'],
+    );
+  }
 }

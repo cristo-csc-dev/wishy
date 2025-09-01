@@ -152,7 +152,44 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             ),
         ],
       ),
-      body: _currentWishList.items.isEmpty
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('wishlists')
+            .doc(_currentWishList.id)
+            .collection('items')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator();
+          }
+          if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}');
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Text('Esta lista no tiene ítems aún.');
+          }
+
+          // Si hay datos, construye la lista de ítems
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              final itemDoc = snapshot.data!.docs[index];
+              final itemData = itemDoc.data() as Map<String, dynamic>;
+              WishItem item = WishItem.fromMap(itemData);
+              return WishCard(
+                  wishItem: item,
+                  isForGifting: widget.isForGifting,
+                  onMarkAsBought: widget.isForGifting && _currentWishList.allowMarkingAsBought
+                      ? () => _markWishAsBought(item)
+                      : null,
+                  onEdit: !widget.isForGifting ? () => _editWishItem(item) : null,
+                  onDelete: !widget.isForGifting ? () => _deleteWishItem(item) : null,
+                );
+            },
+          );
+        },
+      ),
+      /*_currentWishList.items.isEmpty
           ? Center(
               child: Text(widget.isForGifting
                   ? 'Esta lista de deseos está vacía.'
@@ -173,6 +210,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                 );
               },
             ),
+            */
       floatingActionButton: !widget.isForGifting
           ? FloatingActionButton(
               onPressed: _addWishItem,
