@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wishy/mocks/mocks.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/create_edit_list_screen.dart';
@@ -20,6 +21,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   // Cambia a 3 pestañas: 0 para Mis Listas, 1 para Listas para Regalar, 2 para Eventos
   int _selectedIndex = 0; 
 
@@ -156,50 +160,65 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Widget _buildMyListsView() {
-    if (userWishLists.isEmpty) {
-      return const Center(
-        child: Text('No tienes listas de deseos. ¡Crea una!'),
-      );
+    final user = _auth.currentUser;
+    if (user == null) {
+      return const Center(child: Text('Inicia sesión para ver tus listas.'));
     }
-    return ListView.builder(
-      itemCount: userWishLists.length,
-      itemBuilder: (context, index) {
-        final list = userWishLists[index];
-        return ListCard(
-          wishList: list,
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ListDetailScreen(wishList: list),
-              ),
-            );
-            setState(() {}); // Actualizar la vista si se hicieron cambios
-          },
-          onEdit: () async {
-            final updatedList = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CreateEditListScreen(wishList: list),
-              ),
-            );
-            if (updatedList != null && updatedList is WishList) {
-              setState(() {
-                final idx = userWishLists.indexOf(list);
-                if (idx != -1) {
-                  userWishLists[idx] = updatedList;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _db.collection('wishlists').where('ownerId', isEqualTo:  user.uid).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text('No tienes listas de deseos. ¡Crea una!'),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: snapshot.data!.docs.length,
+          itemBuilder: (context, index) {
+            final doc = snapshot.data!.docs[index];
+            final list = WishList.fromFirestore(doc);
+            return ListCard(
+              wishList: list,
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ListDetailScreen(wishList: list),
+                  ),
+                );
+                // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
+              },
+              onEdit: () async {
+                final updatedList = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreateEditListScreen(wishList: list),
+                  ),
+                );
+                // No necesitamos setState() aquí
+                if (updatedList != null && updatedList is WishList) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Lista "${updatedList.name}" actualizada.')));
                 }
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lista "${updatedList.name}" actualizada.')));
-            }
-          },
-          onShare: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Compartir lista "${list.name}"')));
-          },
-          onDelete: () {
-            _showDeleteConfirmationDialog(list);
+              },
+              onShare: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Compartir lista "${list.name}"')));
+              },
+              onDelete: () {
+                _showDeleteConfirmationDialog(list);
+              },
+            );
           },
         );
       },

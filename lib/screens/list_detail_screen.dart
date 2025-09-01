@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/models/wish_item.dart';
@@ -20,6 +22,10 @@ class ListDetailScreen extends StatefulWidget {
 }
 
 class _ListDetailScreenState extends State<ListDetailScreen> {
+
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   late WishList _currentWishList; // Para poder modificarla
 
   @override
@@ -37,7 +43,8 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     );
     if (newWish != null && newWish is WishItem) {
       setState(() {
-        _currentWishList.items.add(newWish);
+        _db.collection('wishlists').doc(_currentWishList.id).collection('items').add(newWish.toMap());
+        //_currentWishList.items.add(newWish);
       });
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));

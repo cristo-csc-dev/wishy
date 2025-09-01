@@ -22,4 +22,18 @@ class WishItem {
     this.isBought = false,
     this.boughtById,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'productUrl': productUrl,
+      'estimatedPrice': estimatedPrice,
+      'suggestedStore': suggestedStore,
+      'notes': notes,
+      'imageUrl': imageUrl,
+      'priority': priority,
+      'isBought': isBought,
+      'boughtById': boughtById,
+    };
+  }
 }
