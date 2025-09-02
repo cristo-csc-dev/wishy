@@ -14,6 +14,7 @@ class WishList {
   List<WishItem> items;
   DateTime? eventDate; // Fecha asociada a la lista (ej. cumpleaños)
   bool allowMarkingAsBought; // Permitir a contactos marcar como comprado
+  int itemCount = 0; // Número de ítems en la lista
 
   WishList({
     required this.id,
@@ -26,6 +27,7 @@ class WishList {
     this.items = const [],
     this.eventDate,
     this.allowMarkingAsBought = true,
+    this.itemCount = 0,
   });
 
   factory WishList.fromFirestore(DocumentSnapshot doc) {
@@ -37,6 +39,7 @@ class WishList {
       description: data['description'] ?? '',
       ownerId: data['ownerId'] ?? '',
       sharedWithContactIds: sharedWith != null ? List<String>.from(sharedWith) : [],
+      itemCount: data['itemCount'] ?? 0,
     );
   }
 }

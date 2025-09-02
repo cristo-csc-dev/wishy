@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'dart:async';
 
+import 'package:wishy/dao/wish_list_dao.dart';
+
 // Componente principal para manejar el intento de compartir
 class ShareHandlerScreen extends StatefulWidget {
   const ShareHandlerScreen({super.key});
@@ -24,7 +26,7 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
   List<Wishlist> _wishlists = [];
 
   // Instancias de Firebase
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  //final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Stream para recibir el intent
@@ -71,14 +73,15 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
     }
 
     try {
-      final snapshot = await _db
+      /*final snapshot = await _db
           .collection('artifacts/__app_id/users/${user.uid}/wishlists')
-          .get();
+          .get();*/
+      /*Stream<QuerySnapshot<Map<String, dynamic>>> snapshot = WishlistDao().getWishlistsStreamSnapshot(user.uid);
       setState(() {
         _wishlists =
-            snapshot.docs.map((doc) => Wishlist.fromFirestore(doc)).toList();
+            snapshot.map((doc) => Wishlist.fromFirestore(doc)).toList().get();
         _isLoading = false;
-      });
+      });*/
     } catch (e) {
       print('Error al cargar las listas: $e');
       setState(() {
@@ -137,24 +140,17 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
 
       if (targetWishlistId.isEmpty) {
         // Crear una nueva lista de deseos
-        final newWishlistRef = await _db
-            .collection('artifacts/__app_id/users/${user.uid}/wishlists')
-            .add({
-          'name': _newWishlistName,
+        final newWishlistRefId = await WishlistDao().createWishlist({
+          'name': _newWishlistName.trim(),
           'ownerId': user.uid,
-          'collaborators': [],
-          'isPublic': false,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
-        targetWishlistId = newWishlistRef.id;
+        targetWishlistId = newWishlistRefId;
       }
 
       // Añadir el ítem a la lista
-      await _db
-          .collection(
-              'artifacts/__app_id/users/${user.uid}/wishlists/$targetWishlistId/items')
-          .add({
+      await WishlistDao().addItem(targetWishlistId, {
         'name': _sharedText.isNotEmpty ? _sharedText : _sharedLink,
         'link': _sharedLink.isNotEmpty ? _sharedLink : null,
         'description': '',
@@ -163,7 +159,6 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-
       _showSnackbar('¡Ítem guardado con éxito!');
       // Cerrar la pantalla después de guardar
       Navigator.of(context).pop();

@@ -2,7 +2,7 @@
     <application
         android:label="wishy"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/wishy">
         <activity
             android:name=".MainActivity"
             android:exported="true"

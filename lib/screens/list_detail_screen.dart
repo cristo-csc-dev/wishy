@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/screens/add_wish_screen.dart';
@@ -43,8 +44,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     );
     if (newWish != null && newWish is WishItem) {
       setState(() {
-        _db.collection('wishlists').doc(_currentWishList.id).collection('items').add(newWish.toMap());
-        //_currentWishList.items.add(newWish);
+        WishlistDao().addItem(_currentWishList.id, newWish.toMap());
       });
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));
@@ -189,28 +189,6 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
           );
         },
       ),
-      /*_currentWishList.items.isEmpty
-          ? Center(
-              child: Text(widget.isForGifting
-                  ? 'Esta lista de deseos está vacía.'
-                  : 'Esta lista está vacía. ¡Añade algunos deseos!'),
-            )
-          : ListView.builder(
-              itemCount: _currentWishList.items.length,
-              itemBuilder: (context, index) {
-                final item = _currentWishList.items[index];
-                return WishCard(
-                  wishItem: item,
-                  isForGifting: widget.isForGifting,
-                  onMarkAsBought: widget.isForGifting && _currentWishList.allowMarkingAsBought
-                      ? () => _markWishAsBought(item)
-                      : null,
-                  onEdit: !widget.isForGifting ? () => _editWishItem(item) : null,
-                  onDelete: !widget.isForGifting ? () => _deleteWishItem(item) : null,
-                );
-              },
-            ),
-            */
       floatingActionButton: !widget.isForGifting
           ? FloatingActionButton(
               onPressed: _addWishItem,

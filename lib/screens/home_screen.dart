@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/mocks/mocks.dart';
 import 'package:wishy/models/wish_list.dart';
+import 'package:wishy/screens/create_edit_contact_screen.dart';
 import 'package:wishy/screens/create_edit_list_screen.dart';
 import 'package:wishy/screens/friend_list_overview_screen.dart';
 import 'package:wishy/screens/list_detail_screen.dart';
@@ -22,7 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  //final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Cambia a 3 pestañas: 0 para Mis Listas, 1 para Listas para Regalar, 2 para Eventos
   int _selectedIndex = 0; 
@@ -79,6 +81,18 @@ class _HomeScreenState extends State<HomeScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Evento "${result.name}" creado.')));
+            }
+          } else if (_selectedIndex == 1) {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CreateEditContactScreen()),
+            );
+            if (result != null && result is WishList) {
+              setState(() {
+                userWishLists.add(result);
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lista "${result.name}" creada.')));
             }
           } else { // Si no, crea una lista normal
             final result = await Navigator.push(
@@ -166,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: _db.collection('wishlists').where('ownerId', isEqualTo:  user.uid).snapshots(),
+      stream: WishlistDao().getWishlistsStreamSnapshot(user.uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

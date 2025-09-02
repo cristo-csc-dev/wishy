@@ -83,7 +83,7 @@ class ListCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${wishList.items.length} deseos',
+                '${wishList.itemCount} deseos',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 4),
