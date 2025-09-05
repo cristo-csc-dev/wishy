@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/mocks/mocks.dart';
 import 'package:wishy/models/wish_list.dart';
+import 'package:wishy/screens/contact_request_screen.dart';
 import 'package:wishy/screens/create_edit_contact_screen.dart';
 import 'package:wishy/screens/create_edit_list_screen.dart';
 import 'package:wishy/screens/friend_list_overview_screen.dart';
@@ -28,6 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Cambia a 3 pestañas: 0 para Mis Listas, 1 para Listas para Regalar, 2 para Eventos
   int _selectedIndex = 0; 
+  int _pendingRequestsCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPendingRequestsCount();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +50,49 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.group_add),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ContactRequestsScreen(),
+                    ),
+                  );
+                },
+              ),
+              if (_pendingRequestsCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 14,
+                      minHeight: 14,
+                    ),
+                    child: Text(
+                      '$_pendingRequestsCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               _signOut();
-              //ScaffoldMessenger.of(context).showSnackBar(
-              //    const SnackBar(content: Text('Función de Búsqueda')));
             },
           ),
         ],
@@ -111,6 +156,25 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico
       ),
     );
+  }
+
+  void _fetchPendingRequestsCount() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('contacts')
+          .where('acceptanceDate', isNull: true)
+          .snapshots()
+          .listen((snapshot) {
+            if (mounted) {
+              setState(() {
+                _pendingRequestsCount = snapshot.docs.length;
+              });
+            }
+          });
+    }
   }
 
   // Modificación en _buildSegmentedControl para 3 pestañas
