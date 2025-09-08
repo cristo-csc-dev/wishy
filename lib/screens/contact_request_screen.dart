@@ -42,8 +42,8 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
           
       final Map<String, dynamic> currentUserData = {
         'senderId': currentUser.uid,
-        'senderEmail': currentUser.email,
-        'senderName': currentUser.displayName ?? 'Anónimo',
+        'email': currentUser.email,
+        'name': currentUser.displayName ?? 'Anónimo',
         'requestDate': FieldValue.serverTimestamp(),
         'acceptanceDate': FieldValue.serverTimestamp(),
         'status': 'accepted',

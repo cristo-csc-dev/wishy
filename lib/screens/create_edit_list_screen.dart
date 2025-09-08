@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
+import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:uuid/uuid.dart'; // Añadir al pubspec.yaml: uuid: ^4.0.0
 
@@ -31,6 +33,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   List<String> _selectedContactIds = [];
   DateTime? _selectedEventDate;
   bool _allowMarkingAsBought = true;
+  List<Contact> _contacts = [];
 
   @override
   void initState() {
@@ -114,23 +117,26 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   void _selectContacts() async {
     // Esto es una simulación. En una app real, abrirías una pantalla
     // para seleccionar contactos de tu base de datos o agenda.
+     _contacts = await UserDao().getAcceptedContacts();
+
     final List<String>? result = await showDialog<List<String>>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Seleccionar Contactos'),
         content: SingleChildScrollView(
           child: Column(
-            children: availableContactIds.map((contactId) {
-              final isSelected = _selectedContactIds.contains(contactId);
+            children: /*availableContactIds*/_contacts.map((contact) {
+              final isSelected = _selectedContactIds.contains(contact.id);
               return CheckboxListTile(
-                title: Text(contactNames[contactId] ?? contactId),
+                title: Text(contact.name?? '--'),
+                subtitle: Text(contact.email),
                 value: isSelected,
                 onChanged: (bool? value) {
                   setState(() {
                     if (value == true) {
-                      _selectedContactIds.add(contactId);
+                      _selectedContactIds.add(contact.id);
                     } else {
-                      _selectedContactIds.remove(contactId);
+                      _selectedContactIds.remove(contact.id);
                     }
                   });
                   // Forzar la reconstrucción del AlertDialog para reflejar el cambio

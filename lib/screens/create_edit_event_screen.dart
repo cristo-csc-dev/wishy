@@ -7,9 +7,9 @@ import 'package:uuid/uuid.dart';
 // Simulación de contactos disponibles para invitar (los mismos que para compartir listas)
 // En una app real, vendrían de la lista de amigos del usuario
 final List<Contact> availableContactsForEvents = [
-  Contact(id: 'c1', name: 'Ana García'),
-  Contact(id: 'c2', name: 'Javier Ramos'),
-  Contact(id: 'c3', name: 'María López'),
+  Contact(id: 'c1', name: 'Ana García', email: 'a@a.com'),
+  Contact(id: 'c2', name: 'Javier Ramos', email: 'b@b.com'),
+  Contact(id: 'c3', name: 'María López', email: 'c@c.com'),
 ];
 
 class CreateEditEventScreen extends StatefulWidget {
@@ -75,7 +75,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 return StatefulBuilder( // Necesario para que el checkbox se actualice
                   builder: (context, setDialogState) {
                     return CheckboxListTile(
-                      title: Text(contact.name),
+                      title: Text(contact.name?? '--'),
                       value: isSelected,
                       onChanged: (bool? value) {
                         setDialogState(() {
@@ -219,17 +219,17 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 spacing: 8.0,
                 runSpacing: 4.0,
                 children: _invitedUserIds.map((id) {
-                  final contactName = availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: 'Usuario Desconocido')).name;
+                  final contactName = availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: 'Usuario Desconocido', email: 'a@a.com')).name;
                   return Chip(
                     avatar: CircleAvatar(
-                      backgroundImage: availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '')).avatarUrl != null
-                          ? NetworkImage(availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '')).avatarUrl!)
+                      backgroundImage: availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'b@b.com')).avatarUrl != null
+                          ? NetworkImage(availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'c@c.com')).avatarUrl!)
                           : null,
-                      child: availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '')).avatarUrl == null
+                      child: availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'd@d.com')).avatarUrl == null
                           ? const Icon(Icons.person_outline, size: 18)
                           : null,
                     ),
-                    label: Text(contactName),
+                    label: Text(contactName?? '--'),
                     onDeleted: () {
                       setState(() {
                         _invitedUserIds.remove(id);

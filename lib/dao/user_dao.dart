@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/models/contact.dart';
 
 class UserDao {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -129,7 +130,7 @@ class UserDao {
   }
 
   // Función para obtener los UIDs de los contactos aceptados del usuario actual
-  Future<List<String>> getAcceptedContactUids() async {
+  Future<List<Contact>> getAcceptedContacts() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       return [];
@@ -142,7 +143,7 @@ class UserDao {
         .where('status', isEqualTo: 'accepted')
         .get();
 
-    return contactsSnapshot.docs.map((doc) => doc.id).toList();
+    return contactsSnapshot.docs.map((doc) => Contact.fromFirestore(doc)).toList();
   }
 
   // Función para recuperar las solicitudes de contacto pendientes para el usuario actual
@@ -160,4 +161,5 @@ class UserDao {
         .where('status', isEqualTo: 'pending')
         .snapshots();
   }
+
 }

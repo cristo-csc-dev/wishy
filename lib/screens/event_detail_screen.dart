@@ -253,13 +253,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               runSpacing: 4.0,
               children: _currentEvent.participantUserIds.map((userId) {
                 // Simulación para obtener nombre del contacto
-                final contact = availableContactsForEvents.firstWhere((c) => c.id == userId, orElse: () => Contact(id: userId, name: 'Tú' /* o "Usuario Desconocido" */));
+                final contact = availableContactsForEvents.firstWhere((c) => c.id == userId, orElse: () => Contact(id: userId, name: 'Tú' /* o "Usuario Desconocido" */, email: ''));
                 return Chip(
                   avatar: CircleAvatar(
                     backgroundImage: contact.avatarUrl != null ? NetworkImage(contact.avatarUrl!) : null,
                     child: contact.avatarUrl == null ? const Icon(Icons.person_outline) : null,
                   ),
-                  label: Text(contact.name),
+                  label: Text(contact.name?? '--'),
                 );
               }).toList(),
             ),
@@ -289,7 +289,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
               ),
             ..._currentEvent.participantUserIds.expand((userId) {
-              final userName = (userId == currentUserId) ? 'Tú' : availableContactsForEvents.firstWhere((c) => c.id == userId, orElse: () => Contact(id: userId, name: 'Usuario Desconocido')).name;
+              final userName = (userId == currentUserId) ? 'Tú' : availableContactsForEvents.firstWhere((c) => c.id == userId, orElse: () => Contact(id: userId, name: 'Usuario Desconocido', email: '')).name;
               final userEventLists = participantLists[userId] ?? [];
               final userEventLooseWishes = participantLooseWishes[userId] ?? [];
 
