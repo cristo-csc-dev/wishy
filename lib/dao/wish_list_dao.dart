@@ -65,4 +65,9 @@ class WishlistDao {
       throw Exception('Error al eliminar el deseo: $e');
     }
   }
+
+  void createOrUpdateWishlist(String id, Map<String, Object> map) {
+     _db.collection('wishlists').doc(id).set(map, SetOptions(merge: true));
+  }
+
 }
