@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/dao/user_dao.dart';
 import 'create_user_screen.dart'; // Importa la nueva pantalla de creación
 
 class LoginScreen extends StatefulWidget {
@@ -28,6 +29,11 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+
+      if(await UserDao().getUserById(_auth.currentUser!.uid) == null) {
+        await UserDao().createUser(_auth.currentUser!.uid, _emailController.text, _auth.currentUser!.displayName ?? "Sin nombre");
+      }
+
     } on FirebaseAuthException catch (e) {
       String message;
       if (e.code == 'user-not-found' || e.code == 'wrong-password') {

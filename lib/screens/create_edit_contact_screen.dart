@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wishy/dao/contact_dao.dart';
+import 'package:wishy/dao/user_dao.dart';
 
 class CreateEditContactScreen extends StatefulWidget {
   const CreateEditContactScreen({super.key});
@@ -19,7 +19,7 @@ class _CreateEditContactScreenState extends State<CreateEditContactScreen> {
     final email = _emailController.text;
     
     if (name.isNotEmpty && email.isNotEmpty) {
-      ContactDao().addContact(name, email);
+      UserDao().sendContactRequest(email: email);
       print('Añadir contacto: $name, $email');
       Navigator.of(context).pop();
     } else {

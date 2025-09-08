@@ -18,9 +18,9 @@ class ContactRequest {
       Map data = doc.data() as Map<String, dynamic>;
       return ContactRequest(
         id: doc.id,
-        senderId: data['senderId'] ?? '',
-        senderEmail: data['senderEmail'] ?? 'Usuario desconocido',
-        senderName: data['senderName'] ?? 'Anónimo',
+        senderId: data['userId'] ?? '',
+        senderEmail: data['email'] ?? 'Usuario desconocido',
+        senderName: data['name'] ?? 'Anónimo',
       );
     }
   }

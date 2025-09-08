@@ -36,7 +36,7 @@ List<WishList> userWishLists = [
 ];
 
 // Simulamos los contactos que han compartido listas con el usuario actual
-List<Contact> contactsWithSharedLists = [
+/*List<Contact> contactsWithSharedLists = [
   Contact(
     id: 'c1',
     name: 'Ana García',
@@ -78,6 +78,7 @@ List<Contact> contactsWithSharedLists = [
     ],
   ),
 ];
+*/
 // --- Fin Simulación de datos ---
 
 // --- Simulación de datos de eventos ---

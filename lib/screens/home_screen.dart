@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/mocks/mocks.dart';
 import 'package:wishy/models/wish_list.dart';
@@ -9,6 +10,7 @@ import 'package:wishy/screens/create_edit_contact_screen.dart';
 import 'package:wishy/screens/create_edit_list_screen.dart';
 import 'package:wishy/screens/friend_list_overview_screen.dart';
 import 'package:wishy/screens/list_detail_screen.dart';
+import 'package:wishy/screens/user_profile_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
 import 'package:wishy/models/event.dart'; // ¡NUEVO!
 import 'package:wishy/screens/create_edit_event_screen.dart'; // ¡NUEVO!
@@ -42,12 +44,44 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Wishlist'),
-        leading: IconButton(
+        leading: PopupMenuButton<String>(
           icon: const Icon(Icons.person),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Menú de Perfil/Ajustes')));
+          // Ajusta el offset para que el menú aparezca justo debajo del icono
+          offset: const Offset(0, kToolbarHeight),
+          onSelected: (String result) async {
+            if (result == 'profile') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(),
+                ),
+              );
+            } else if (result == 'logout') {
+              await FirebaseAuth.instance.signOut();
+            }
           },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'profile',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, color: Colors.indigo),
+                  SizedBox(width: 8),
+                  Text('Editar Perfil'),
+                ],
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'logout',
+              child: Row(
+                children: [
+                  Icon(Icons.logout, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Cerrar Sesión'),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           Stack(
@@ -88,12 +122,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
             ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              _signOut();
-            },
           ),
         ],
       ),
@@ -161,19 +189,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _fetchPendingRequestsCount() {
     final user = _auth.currentUser;
     if (user != null) {
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('contacts')
-          .where('acceptanceDate', isNull: true)
-          .snapshots()
-          .listen((snapshot) {
-            if (mounted) {
-              setState(() {
-                _pendingRequestsCount = snapshot.docs.length;
-              });
-            }
+
+      UserDao().getPendingRequests().listen((snapshot) {
+        if (mounted) {
+          setState(() {
+            _pendingRequestsCount = snapshot.docs.length;
           });
+        }
+      });
     }
   }
 
@@ -364,6 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  var contactsWithSharedLists = [];
   Widget _buildGiftListsContactsView() {
     if (contactsWithSharedLists.isEmpty) {
       return const Center(

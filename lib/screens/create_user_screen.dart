@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/dao/user_dao.dart';
 
 class CreateUserScreen extends StatefulWidget {
   const CreateUserScreen({super.key});
@@ -38,6 +39,9 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+
+      //await UserDao().createUser(userCredential.user!.uid, _emailController.text, _passwordController.text);
+      
       // Al registrar, navega automáticamente a la pantalla principal
       // debido al StreamBuilder en main.dart. Cierra la pantalla de registro.
       Navigator.of(context).pop();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact_request.dart';
 
 class ContactRequestsScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
 
       await userContactRef.update({
         'acceptanceDate': FieldValue.serverTimestamp(),
+        'status': 'accepted',
       });
 
       // 2. Crear una entrada recíproca para el remitente
@@ -44,6 +46,7 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
         'senderName': currentUser.displayName ?? 'Anónimo',
         'requestDate': FieldValue.serverTimestamp(),
         'acceptanceDate': FieldValue.serverTimestamp(),
+        'status': 'accepted',
       };
       
       await senderContactRef.set(currentUserData);
@@ -103,12 +106,7 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore
-            .collection('users')
-            .doc(currentUser.uid)
-            .collection('contacts')
-            .where('acceptanceDate', isNull: true)
-            .snapshots(),
+        stream: UserDao().getPendingRequests(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
