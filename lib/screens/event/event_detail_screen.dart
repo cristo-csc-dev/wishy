@@ -5,9 +5,9 @@ import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/event.dart';
 import 'package:wishy/models/wish_list.dart'; // Para seleccionar listas existentes
 import 'package:wishy/models/wish_item.dart'; // Para añadir deseos sueltos
-import 'package:wishy/screens/add_wish_screen.dart';
-import 'package:wishy/screens/list_detail_screen.dart'; // Para ver el detalle de una lista
-import 'package:wishy/screens/create_edit_event_screen.dart';
+import 'package:wishy/screens/wish/add_wish_screen.dart';
+import 'package:wishy/screens/wish/list_detail_screen.dart'; // Para ver el detalle de una lista
+import 'package:wishy/screens/event/create_edit_event_screen.dart';
 
 // Simulación de usuario actual y sus listas/deseos
 const String currentUserId = 'current_user_id';

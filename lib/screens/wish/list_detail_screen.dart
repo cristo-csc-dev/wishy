@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/models/wish_item.dart';
-import 'package:wishy/screens/add_wish_screen.dart';
-import 'package:wishy/screens/create_edit_list_screen.dart';
+import 'package:wishy/screens/wish/add_wish_screen.dart';
+import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/widgets/wish_card.dart';
 
 class ListDetailScreen extends StatefulWidget {

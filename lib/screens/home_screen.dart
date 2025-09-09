@@ -6,16 +6,16 @@ import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/mocks/mocks.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
-import 'package:wishy/screens/contact_request_screen.dart';
-import 'package:wishy/screens/create_edit_contact_screen.dart';
-import 'package:wishy/screens/create_edit_list_screen.dart';
+import 'package:wishy/screens/user/contact_request_screen.dart';
+import 'package:wishy/screens/user/create_edit_contact_screen.dart';
+import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/friend_list_overview_screen.dart';
-import 'package:wishy/screens/list_detail_screen.dart';
-import 'package:wishy/screens/user_profile_screen.dart';
+import 'package:wishy/screens/wish/list_detail_screen.dart';
+import 'package:wishy/screens/user/user_profile_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
 import 'package:wishy/models/event.dart'; // ¡NUEVO!
-import 'package:wishy/screens/create_edit_event_screen.dart'; // ¡NUEVO!
-import 'package:wishy/screens/event_detail_screen.dart'; // ¡NUEVO!
+import 'package:wishy/screens/event/create_edit_event_screen.dart'; // ¡NUEVO!
+import 'package:wishy/screens/event/event_detail_screen.dart'; // ¡NUEVO!
 
 
 
@@ -397,6 +397,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: UserDao().getAcceptedContactsStream(),
       builder: (context, snapshot) {
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
