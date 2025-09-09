@@ -146,6 +146,21 @@ class UserDao {
     return contactsSnapshot.docs.map((doc) => Contact.fromFirestore(doc)).toList();
   }
 
+  Stream<QuerySnapshot> getAcceptedContactsStream() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      // Retorna un stream vacío si no hay usuario
+      return Stream.empty();
+    }
+
+    return _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('contacts')
+        .where('status', isEqualTo: 'accepted')
+        .snapshots();
+  }
+
   // Función para recuperar las solicitudes de contacto pendientes para el usuario actual
   Stream<QuerySnapshot> getPendingRequests() {
     final currentUser = FirebaseAuth.instance.currentUser;

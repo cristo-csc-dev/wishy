@@ -23,6 +23,6 @@ class Contact {
   });
 
   factory Contact.fromFirestore(DocumentSnapshot doc) {
-    return Contact(id: doc.id, name: doc['name'] ?? 'Anónimo', email: doc['email']);
+    return Contact(id: doc.id, name: doc['name'], email: doc['email']);
   }
 }

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/mocks/mocks.dart';
+import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/contact_request_screen.dart';
 import 'package:wishy/screens/create_edit_contact_screen.dart';
@@ -259,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ... ( _buildMyListsView y _buildGiftListsContactsView permanecen igual ) ...
 
-
+  // --- VISTA DE MIS LISTAS ---
   Widget _buildMyListsView() {
     final user = _auth.currentUser;
     if (user == null) {
@@ -387,76 +388,103 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  var contactsWithSharedLists = [];
   Widget _buildGiftListsContactsView() {
-    if (contactsWithSharedLists.isEmpty) {
+    /*if (contactsWithSharedLists.isEmpty) {
       return const Center(
         child: Text('Nadie ha compartido una lista contigo aún.'),
       );
-    }
-    return ListView.builder(
-      itemCount: contactsWithSharedLists.length,
-      itemBuilder: (context, index) {
-        final contact = contactsWithSharedLists[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FriendListsOverviewScreen(contact: contact),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundImage: contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty
-                        ? NetworkImage(contact.avatarUrl!)
-                        : null,
-                    child: contact.avatarUrl == null || contact.avatarUrl!.isEmpty
-                        ? const Icon(Icons.person, size: 30, color: Colors.white)
-                        : null,
-                    backgroundColor: Colors.blueGrey.shade200,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          contact.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${contact.sharedWishLists.length} Listas de Deseos',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                        if (contact.nextEventDate != null)
-                          Text(
-                            'Próximo Evento: ${contact.nextEventDate!.toIso8601String().split('T')[0]}',
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                          ),
-                      ],
+    }*/
+    return StreamBuilder<QuerySnapshot>(
+      stream: UserDao().getAcceptedContactsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text('Nadie ha compartido una lista contigo aún.'),
+          );
+        }
+
+        var contactsWithSharedLists = snapshot.data!.docs
+            .map((doc) => Contact.fromFirestore(doc))
+            .toList();
+
+        if (contactsWithSharedLists.isEmpty) {
+          return const Center(
+            child: Text('Nadie ha compartido una lista contigo aún.'),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: contactsWithSharedLists.length,
+          itemBuilder: (context, index) {
+            final contact = contactsWithSharedLists[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FriendListsOverviewScreen(contact: contact),
                     ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundImage: contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty
+                            ? NetworkImage(contact.avatarUrl!)
+                            : null,
+                        child: contact.avatarUrl == null || contact.avatarUrl!.isEmpty
+                            ? const Icon(Icons.person, size: 30, color: Colors.white)
+                            : null,
+                        backgroundColor: Colors.blueGrey.shade200,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              contact.name ?? contact.email,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${contact.sharedWishLists.length} Listas de Deseos',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                            if (contact.nextEventDate != null)
+                              Text(
+                                'Próximo Evento: ${contact.nextEventDate!.toIso8601String().split('T')[0]}',
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                    ],
                   ),
-                  const Icon(Icons.arrow_forward_ios, color: Colors.grey),
-                ],
+                ),
               ),
-            ),
-          ),
-        );
+            );
+          });
       },
     );
   }

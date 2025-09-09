@@ -63,13 +63,12 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
         if (user == null) {
           throw Exception('Usuario no autenticado');
         }
-        var sharedContactIds = [];
         WishlistDao().createOrUpdateWishlist(id, {
           'name': _nameController.text,
           'description': _descriptionController.text,
           'privacy': _selectedPrivacy.toString().split('.').last,
           'sharedWithContactIds': _selectedPrivacy == ListPrivacy.shared
-              ? sharedContactIds
+              ? _selectedContactIds
               : [],
           'allowMarkingAsBought': _allowMarkingAsBought,
           'ownerId': user.uid,

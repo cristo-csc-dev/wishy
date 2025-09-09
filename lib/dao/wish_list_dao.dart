@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class WishlistDao {
   // Patrón Singleton
@@ -14,6 +15,14 @@ class WishlistDao {
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getWishlistsStreamSnapshot(String userId) {
     return _db.collection('wishlists').where('ownerId', isEqualTo: userId).snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> getSharedWishlistsStreamSnapshot(String userId) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      throw Exception('Usuario no autenticado.');
+    }
+    return _db.collection('wishlists').where('ownerId', isEqualTo: userId).where('sharedWithContactIds', arrayContains: currentUser.uid).snapshots();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getWishlistsStream(String userId) {
