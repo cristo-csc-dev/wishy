@@ -32,4 +32,28 @@ class Event {
     this.userListsInEvent = const {},
     this.userLooseWishesInEvent = const {},
   });
+
+  static fromFirestore(String id, Map<String, Object> event) {
+    return Event(
+      id: id,
+      name: event['name'] as String,
+      description: event['description'] as String? ?? '',
+      organizerUserId: event['organizerUserId'] as String,
+      eventDate: DateTime.parse(event['eventDate'] as String),
+      type: EventType.values.firstWhere(
+        (e) => e.toString() == 'EventType.${event['type']}',
+        orElse: () => EventType.other,
+      ),
+      invitedUserIds: List<String>.from(event['invitedUserIds'] as List<dynamic>? ?? []),
+      participantUserIds: List<String>.from(event['participantUserIds'] as List<dynamic>? ?? []),
+      userListsInEvent: (event['userListsInEvent'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
+          ) ??
+          {},
+      userLooseWishesInEvent: (event['userLooseWishesInEvent'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
+          ) ??
+          {},
+    );
+  }
 }

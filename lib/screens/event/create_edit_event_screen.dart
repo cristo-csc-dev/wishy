@@ -1,5 +1,7 @@
 // lib/screens/create_edit_event_screen.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/models/event.dart';
 import 'package:wishy/models/contact.dart'; // Para seleccionar invitados
 import 'package:uuid/uuid.dart';
@@ -114,22 +116,26 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   }
 
   void _saveEvent() {
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      throw Exception('Usuario no autenticado.');
+    }
+    var userId = currentUser.uid;
+
     if (_formKey.currentState!.validate()) {
       final String id = widget.event?.id ?? const Uuid().v4();
-      final Event newEvent = Event(
-        id: id,
-        name: _nameController.text,
-        description: _descriptionController.text,
-        organizerUserId: 'current_user_id', // En una app real, obtén el ID del usuario logueado
-        eventDate: _selectedEventDate,
-        type: _selectedEventType,
-        invitedUserIds: _invitedUserIds,
-        // Al crear/editar un evento, los participantes y listas/deseos se gestionan en la pantalla de detalle
-        participantUserIds: widget.event?.participantUserIds ?? [],
-        userListsInEvent: widget.event?.userListsInEvent ?? {},
-        userLooseWishesInEvent: widget.event?.userLooseWishesInEvent ?? {},
-      );
-      Navigator.pop(context, newEvent);
+      Map<String, Object> event = {
+        'name': _nameController.text,
+        'description': _descriptionController.text,
+        'eventDate': _selectedEventDate.toIso8601String(),
+        'type': _selectedEventType.toString().split('.').last,
+        'invitedUserIds': _invitedUserIds,
+        'ownerId': userId, // En una app real, obtén el ID del usuario logueado
+        // participantUserIds, userListsInEvent y userLooseWishesInEvent se gestionan en la pantalla de detalle
+      };
+      EventDao().createOrUpdateEvent(id, event);
+      Navigator.pop(context, Event.fromFirestore(id, event));
     }
   }
 
