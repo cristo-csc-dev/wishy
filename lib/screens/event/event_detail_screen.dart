@@ -1,6 +1,7 @@
 // lib/screens/event_detail_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:wishy/mocks/mocks.dart';
+import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/event.dart';
 import 'package:wishy/models/wish_list.dart'; // Para seleccionar listas existentes
@@ -8,6 +9,7 @@ import 'package:wishy/models/wish_item.dart'; // Para añadir deseos sueltos
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart'; // Para ver el detalle de una lista
 import 'package:wishy/screens/event/create_edit_event_screen.dart';
+import 'package:wishy/sharing/share_handler_screen.dart';
 
 // Simulación de usuario actual y sus listas/deseos
 const String currentUserId = 'current_user_id';
@@ -25,6 +27,9 @@ class EventDetailScreen extends StatefulWidget {
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
   late Event _currentEvent;
+  List<WishList> userWishLists = []; // Simulación de listas del usuario actual
+  List availableContactsForEvents = [];
+  List userAssociatedLists = [];
 
   @override
   void initState() {
@@ -80,9 +85,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   void _selectExistingList() async {
     // Filtrar listas que no estén ya en este evento por el usuario actual
-    final availableLists = userWishLists.where((list) =>
-      !(_currentEvent.userListsInEvent[currentUserId]?.contains(list.id) ?? false)
-    ).toList();
+    QuerySnapshot<Map<String, dynamic>> currentUserLists = await WishlistDao().getWishlistsStream(currentUserId);
+    List<WishList> availableLists = currentUserLists.docs.map(WishList.fromFirestore).toList();
 
     final WishList? selectedList = await showDialog<WishList>(
       context: context,
@@ -187,7 +191,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
     // Para esta demo, el "current_user_id" está en la simulación.
     // Esto es solo para la UI, la lógica de backend sería más compleja.
-    final bool isOrganizer = _currentEvent.organizerUserId == currentUserId;
+    final bool isOrganizer = _currentEvent.ownerId == currentUserId;
     final bool isParticipant = _currentEvent.participantUserIds.contains(currentUserId);
 
 
@@ -253,7 +257,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               runSpacing: 4.0,
               children: _currentEvent.participantUserIds.map((userId) {
                 // Simulación para obtener nombre del contacto
-                final contact = availableContactsForEvents.firstWhere((c) => c.id == userId, orElse: () => Contact(id: userId, name: 'Tú' /* o "Usuario Desconocido" */, email: ''));
+                final contact = Contact(id: userId, name: 'Tú' /* o "Usuario Desconocido" */, email: '');
                 return Chip(
                   avatar: CircleAvatar(
                     backgroundImage: contact.avatarUrl != null ? NetworkImage(contact.avatarUrl!) : null,

@@ -35,12 +35,12 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     }
 
     try {
-      await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      //await UserDao().createUser(userCredential.user!.uid, _emailController.text, _passwordController.text);
+      await UserDao().createUser(userCredential.user!.uid, _emailController.text, '');
       
       // Al registrar, navega automáticamente a la pantalla principal
       // debido al StreamBuilder en main.dart. Cierra la pantalla de registro.

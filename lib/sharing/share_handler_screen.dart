@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 
 import 'package:wishy/dao/wish_list_dao.dart';
+import 'package:wishy/models/wish_list.dart';
 
 // Componente principal para manejar el intento de compartir
 class ShareHandlerScreen extends StatefulWidget {
@@ -23,7 +24,7 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
   bool _isSaving = false;
   String _selectedWishlistId = '';
   String _newWishlistName = '';
-  List<Wishlist> _wishlists = [];
+  List<WishList> _wishlists = [];
 
   // Instancias de Firebase
   //final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -336,7 +337,7 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
 }*/
 
 // Modelo de datos para una lista de deseos
-class Wishlist {
+/*class Wishlist {
   final String id;
   final String name;
 
@@ -350,3 +351,4 @@ class Wishlist {
     );
   }
 }
+*/

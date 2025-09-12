@@ -1,15 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
-import 'package:wishy/mocks/mocks.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/user/contact_request_screen.dart';
 import 'package:wishy/screens/user/create_edit_contact_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
-import 'package:wishy/screens/friend_list_overview_screen.dart';
+import 'package:wishy/screens/user/friend_list_overview_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Wishlist'),
+        title: const Text('Deseos'),
         leading: PopupMenuButton<String>(
           icon: const Icon(Icons.person),
           // Ajusta el offset para que el menú aparezca justo debajo del icono
@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
             if (result != null && result is Event) {
               setState(() {
-                userEvents.add(result);
+                //userEvents.add(result);
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Evento "${result.name}" creado.')));
@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
             if (result != null && result is WishList) {
               setState(() {
-                userWishLists.add(result);
+                //userWishLists.add(result);
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Lista "${result.name}" creada.')));
@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
             if (result != null && result is WishList) {
               setState(() {
-                userWishLists.add(result);
+                //userWishLists.add(result);
               });
               ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Lista "${result.name}" creada.')));
@@ -218,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
-                  child: Text('Deseos', style: TextStyle(fontWeight: _selectedIndex == 0 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 0 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
+                  child: Text('Míos', style: TextStyle(fontWeight: _selectedIndex == 0 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 0 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
                 ),
               ),
             ),
@@ -233,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
-                  child: Text('Contactos', style: TextStyle(fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 1 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
+                  child: Text('De amigos', style: TextStyle(fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 1 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
                 ),
               ),
             ),
@@ -248,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
-                  child: Text('Eventos', style: TextStyle(fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 2 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
+                  child: Text('Para Eventos', style: TextStyle(fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 2 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
                 ),
               ),
             ),
@@ -329,62 +329,80 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- ¡NUEVA VISTA PARA EVENTOS! ---
   Widget _buildEventsView() {
-    if (userEvents.isEmpty) {
-      return const Center(
-        child: Text('No has creado ni participas en ningún evento aún. ¡Crea uno!'),
-      );
-    }
-    return ListView.builder(
-      itemCount: userEvents.length,
-      itemBuilder: (context, index) {
-        final event = userEvents[index];
-        // Aquí podrías usar un EventCard widget reutilizable
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: InkWell(
-            onTap: () async {
-              // Navegar a la pantalla de detalle del evento
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EventDetailScreen(event: event),
-                ),
-              );
-              setState(() {}); // Refrescar si hay cambios en el evento
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+    return StreamBuilder<QuerySnapshot>(
+      stream: EventDao().getEventsSharedWithMe(), 
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text('No hay eventos en el horizonte. ¡Crea uno!'),
+          );
+        }
+
+        var userEvents = snapshot.data!.docs
+            .map((doc) => Event.fromFirestore(doc.id, doc))
+            .toList();
+
+        return ListView.builder(
+          itemCount: userEvents.length,
+          itemBuilder: (context, index) {
+            final event = userEvents[index];
+            // Aquí podrías usar un EventCard widget reutilizable
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: InkWell(
+                onTap: () async {
+                  // Navegar a la pantalla de detalle del evento
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventDetailScreen(event: event),
                     ),
+                  );
+                  setState(() {}); // Refrescar si hay cambios en el evento
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Fecha: ${event.eventDate.toIso8601String().split('T')[0]}',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                      Text(
+                        'Tipo: ${event.type.toString().split('.').last}',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Participantes: ${event.participantUserIds.length}'),
+                      // Miniaturas de los participantes (opcional)
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Fecha: ${event.eventDate.toIso8601String().split('T')[0]}',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  Text(
-                    'Tipo: ${event.type.toString().split('.').last}',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Participantes: ${event.participantUserIds.length}'),
-                  // Miniaturas de los participantes (opcional)
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
-      },
+      }
     );
   }
 
@@ -506,7 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  userWishLists.remove(list);
+                  //userWishLists.remove(list);
                 });
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(

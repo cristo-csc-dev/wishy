@@ -1,23 +1,18 @@
 // lib/screens/create_edit_event_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/event_dao.dart';
+import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/event.dart';
 import 'package:wishy/models/contact.dart'; // Para seleccionar invitados
 import 'package:uuid/uuid.dart';
 
-// Simulación de contactos disponibles para invitar (los mismos que para compartir listas)
-// En una app real, vendrían de la lista de amigos del usuario
-final List<Contact> availableContactsForEvents = [
-  Contact(id: 'c1', name: 'Ana García', email: 'a@a.com'),
-  Contact(id: 'c2', name: 'Javier Ramos', email: 'b@b.com'),
-  Contact(id: 'c3', name: 'María López', email: 'c@c.com'),
-];
-
 class CreateEditEventScreen extends StatefulWidget {
-  final Event? event; // Si es null, es un nuevo evento; si no, para editar
-
-  const CreateEditEventScreen({super.key, this.event});
+  final Event? event;
+  
+  
+  const CreateEditEventScreen({super.key, this.event}); // Si es null, es un nuevo evento; si no, para editar
 
   @override
   State<CreateEditEventScreen> createState() => _CreateEditEventScreenState();
@@ -30,6 +25,10 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   late DateTime _selectedEventDate;
   EventType _selectedEventType = EventType.other;
   List<String> _invitedUserIds = []; // IDs de los invitados
+  // Lista de IDs de los contactos seleccionados
+  List<String> _selectedContactIds = [];
+  // NUEVO: Lista de IDs de invitados seleccionados para un evento
+  List<String> _selectedInvitationIds = [];
 
   @override
   void initState() {
@@ -70,29 +69,47 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         List<String> tempSelected = List.from(_invitedUserIds);
         return AlertDialog(
           title: const Text('Invitar Usuarios'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: availableContactsForEvents.map((contact) {
-                final isSelected = tempSelected.contains(contact.id);
-                return StatefulBuilder( // Necesario para que el checkbox se actualice
-                  builder: (context, setDialogState) {
+          content: StreamBuilder<QuerySnapshot>(
+            stream: UserDao().getAcceptedContactsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                    height: 100,
+                    child: Center(child: CircularProgressIndicator()));
+              }
+              if (!snapshot.hasData) {
+                return const SizedBox(
+                  height: 100,
+                  child: Center(
+                      child: Text('No tienes contactos aceptados.',
+                          textAlign: TextAlign.center)),
+                );
+              }
+
+              final contacts = snapshot.data!;
+              return SingleChildScrollView(
+                child: Column(
+                  children: contacts.docs.map((contact) {
+                    final isSelected = _selectedInvitationIds.contains(contact.id);
                     return CheckboxListTile(
-                      title: Text(contact.name?? '--'),
+                      title: Text(contact['name'] ?? '--'),
+                      subtitle: Text(contact['email']),
                       value: isSelected,
                       onChanged: (bool? value) {
-                        setDialogState(() {
+                        setState(() {
                           if (value == true) {
-                            tempSelected.add(contact.id);
+                            _selectedInvitationIds.add(contact.id);
                           } else {
-                            tempSelected.remove(contact.id);
+                            _selectedInvitationIds.remove(contact.id);
                           }
                         });
+                        (context as Element).markNeedsBuild();
                       },
                     );
-                  },
-                );
-              }).toList(),
-            ),
+                  }).toList(),
+                ),
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -124,6 +141,9 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     var userId = currentUser.uid;
 
     if (_formKey.currentState!.validate()) {
+      if(widget.event != null) {
+
+      }
       final String id = widget.event?.id ?? const Uuid().v4();
       Map<String, Object> event = {
         'name': _nameController.text,
@@ -132,10 +152,13 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         'type': _selectedEventType.toString().split('.').last,
         'invitedUserIds': _invitedUserIds,
         'ownerId': userId, // En una app real, obtén el ID del usuario logueado
+        'participantUserIds': widget.event?.participantUserIds ?? [],
+        'userListsInEvent': widget.event?.userListsInEvent ?? {},
+        'userLooseWishesInEvent': widget.event?.userLooseWishesInEvent ?? {},
         // participantUserIds, userListsInEvent y userLooseWishesInEvent se gestionan en la pantalla de detalle
       };
       EventDao().createOrUpdateEvent(id, event);
-      Navigator.pop(context, Event.fromFirestore(id, event));
+      Navigator.pop(context, Event.fromMap(id, event));
     }
   }
 
@@ -225,17 +248,17 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 spacing: 8.0,
                 runSpacing: 4.0,
                 children: _invitedUserIds.map((id) {
-                  final contactName = availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: 'Usuario Desconocido', email: 'a@a.com')).name;
+                  //final contactName = availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: 'Usuario Desconocido', email: 'a@a.com')).name;
                   return Chip(
                     avatar: CircleAvatar(
-                      backgroundImage: availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'b@b.com')).avatarUrl != null
+                      backgroundImage: /*UserDao().getUserById(id).firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'b@b.com')).avatarUrl != null
                           ? NetworkImage(availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'c@c.com')).avatarUrl!)
-                          : null,
-                      child: availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'd@d.com')).avatarUrl == null
+                          : */null,
+                      child: /*availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'd@d.com')).avatarUrl == null
                           ? const Icon(Icons.person_outline, size: 18)
-                          : null,
+                          : */null,
                     ),
-                    label: Text(contactName?? '--'),
+                    label: Text(/*contactName??*/ '--'),
                     onDeleted: () {
                       setState(() {
                         _invitedUserIds.remove(id);

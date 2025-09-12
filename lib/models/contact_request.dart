@@ -6,12 +6,16 @@ class ContactRequest {
     final String senderId;
     final String senderEmail;
     final String senderName;
+    final String status;
+    final bool read;
 
     ContactRequest({
       required this.id,
       required this.senderId,
       required this.senderEmail,
       required this.senderName,
+      this.read = false,
+      this.status = "pending",
     });
 
     factory ContactRequest.fromFirestore(DocumentSnapshot doc) {
@@ -21,6 +25,8 @@ class ContactRequest {
         senderId: data['userId'] ?? '',
         senderEmail: data['email'] ?? 'Usuario desconocido',
         senderName: data['name'] ?? 'Anónimo',
+        read: data['read'] ?? false,
+        status: data['status'] ?? 'pending',
       );
     }
   }

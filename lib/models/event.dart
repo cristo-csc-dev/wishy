@@ -1,4 +1,6 @@
 // lib/models/event.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum EventType {
   birthday,
   christmas,
@@ -12,7 +14,7 @@ class Event {
   final String id;
   String name;
   String description;
-  String organizerUserId; // ID del usuario que crea el evento
+  String ownerId; // ID del usuario que crea el evento
   DateTime eventDate;
   EventType type;
   List<String> invitedUserIds; // IDs de los usuarios invitados
@@ -24,7 +26,7 @@ class Event {
     required this.id,
     required this.name,
     this.description = '',
-    required this.organizerUserId,
+    required this.ownerId,
     required this.eventDate,
     this.type = EventType.other,
     this.invitedUserIds = const [],
@@ -33,12 +35,34 @@ class Event {
     this.userLooseWishesInEvent = const {},
   });
 
-  static fromFirestore(String id, Map<String, Object> event) {
+  static fromMap(String id, Map<String, dynamic> map) {
+    return Event(
+      id: id,
+      name: map['name'] as String,
+      description: map['description'] as String? ?? '',
+      ownerId: map['ownerId'] as String,
+      eventDate: DateTime.parse(map['eventDate'] as String),
+      type: EventType.values.firstWhere(
+        (e) => e.toString() == 'EventType.${map['type']}',
+        orElse: () => EventType.other,
+      ),
+      invitedUserIds: List<String>.from(map['invitedUserIds'] as List<dynamic>? ?? []),
+      participantUserIds: List<String>.from(map['participantUserIds'] as List<dynamic>? ?? []),
+      userListsInEvent: (map['userListsInEvent'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
+          ) ?? {},
+      userLooseWishesInEvent: (map['userLooseWishesInEvent'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
+          ) ?? {},
+    );
+  }
+
+  static fromFirestore(String id, DocumentSnapshot event) {
     return Event(
       id: id,
       name: event['name'] as String,
       description: event['description'] as String? ?? '',
-      organizerUserId: event['organizerUserId'] as String,
+      ownerId: event['ownerId'] as String,
       eventDate: DateTime.parse(event['eventDate'] as String),
       type: EventType.values.firstWhere(
         (e) => e.toString() == 'EventType.${event['type']}',

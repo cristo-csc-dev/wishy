@@ -22,7 +22,13 @@ class WishlistDao {
     if (currentUser == null) {
       throw Exception('Usuario no autenticado.');
     }
-    return _db.collection('wishlists').where('ownerId', isEqualTo: userId).where('sharedWithContactIds', arrayContains: currentUser.uid).snapshots();
+    return _db.collection('whishlists').where(
+        Filter.or(
+          Filter('sharedWithUserIds', arrayContains: userId),
+          Filter('privacy', isEqualTo: 'public'),
+        )
+      )
+      .snapshots();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getWishlistsStream(String userId) {

@@ -23,4 +23,15 @@ class EventDao {
   void createOrUpdateEvent(String id, Map<String, Object> map) {
     _db.collection('events').doc(id).set(map, SetOptions(merge: true));
   }
+
+  Stream<QuerySnapshot> getEventsSharedWithMe() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      return _db.collection('events').where(
+        Filter.or(Filter('invitedUserIds', arrayContains: user.uid), Filter('ownerId', isEqualTo: user.uid))
+      ).snapshots();
+    } else {
+      throw Exception('No user is currently signed in.');
+    }
+  }
 }
