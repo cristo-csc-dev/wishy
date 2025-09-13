@@ -26,9 +26,9 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   EventType _selectedEventType = EventType.other;
   List<String> _invitedUserIds = []; // IDs de los invitados
   // Lista de IDs de los contactos seleccionados
-  List<String> _selectedContactIds = [];
+  final List<String> _selectedContactIds = [];
   // NUEVO: Lista de IDs de invitados seleccionados para un evento
-  List<String> _selectedInvitationIds = [];
+  final List<String> _selectedInvitationIds = [];
 
   @override
   void initState() {
@@ -117,7 +117,9 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
               child: const Text('Cancelar'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, tempSelected),
+              onPressed: () => {
+                Navigator.pop(context, tempSelected)
+              },
               child: const Text('Invitar'),
             ),
           ],
@@ -150,7 +152,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         'description': _descriptionController.text,
         'eventDate': _selectedEventDate.toIso8601String(),
         'type': _selectedEventType.toString().split('.').last,
-        'invitedUserIds': _invitedUserIds,
+        'invitedUserIds': _selectedInvitationIds,
         'ownerId': userId, // En una app real, obtén el ID del usuario logueado
         'participantUserIds': widget.event?.participantUserIds ?? [],
         'userListsInEvent': widget.event?.userListsInEvent ?? {},
@@ -158,7 +160,8 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         // participantUserIds, userListsInEvent y userLooseWishesInEvent se gestionan en la pantalla de detalle
       };
       EventDao().createOrUpdateEvent(id, event);
-      Navigator.pop(context, Event.fromMap(id, event));
+      Navigator.of( context).pop(); // Cierra la pantalla actual
+      //Navigator.pop(context, Event.fromMap(id, event));
     }
   }
 
@@ -213,7 +216,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<EventType>(
-                value: _selectedEventType,
+                initialValue: _selectedEventType,
                 decoration: const InputDecoration(
                   labelText: 'Tipo de Evento',
                   border: OutlineInputBorder(),

@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.group_add),
+                icon: const Icon(Icons.notifications),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -467,10 +467,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         backgroundImage: contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty
                             ? NetworkImage(contact.avatarUrl!)
                             : null,
+                        backgroundColor: Colors.blueGrey.shade200,
                         child: contact.avatarUrl == null || contact.avatarUrl!.isEmpty
                             ? const Icon(Icons.person, size: 30, color: Colors.white)
                             : null,
-                        backgroundColor: Colors.blueGrey.shade200,
                       ),
                       const SizedBox(width: 16),
                       Expanded(

@@ -4,7 +4,6 @@ import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
-import 'package:wishy/sharing/share_handler_screen.dart';
 import 'package:wishy/widgets/list_card.dart'; // Reutilizamos ListCard
 
 class FriendListsOverviewScreen extends StatelessWidget {

@@ -48,10 +48,10 @@ class Event {
       ),
       invitedUserIds: List<String>.from(map['invitedUserIds'] as List<dynamic>? ?? []),
       participantUserIds: List<String>.from(map['participantUserIds'] as List<dynamic>? ?? []),
-      userListsInEvent: (map['userListsInEvent'] as Map<String, dynamic>?)?.map(
+      userListsInEvent: (map['userListsInEvent'] as Map<dynamic, dynamic>?)?.map(
             (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
           ) ?? {},
-      userLooseWishesInEvent: (map['userLooseWishesInEvent'] as Map<String, dynamic>?)?.map(
+      userLooseWishesInEvent: (map['userLooseWishesInEvent'] as Map<dynamic, dynamic>?)?.map(
             (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
           ) ?? {},
     );

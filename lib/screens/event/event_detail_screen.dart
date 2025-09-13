@@ -322,7 +322,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       ));
                     },
                   ),
-                )).toList(),
+                )),
                 ...userEventLooseWishes.map((item) => Card(
                   margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                   child: ListTile(
@@ -336,9 +336,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Detalle de deseo suelto: ${item.name}')));
                     },
                   ),
-                )).toList(),
+                )),
               ];
-            }).toList(),
+            }),
           ],
         ),
       ),

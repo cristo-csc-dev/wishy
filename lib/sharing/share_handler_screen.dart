@@ -24,7 +24,7 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
   bool _isSaving = false;
   String _selectedWishlistId = '';
   String _newWishlistName = '';
-  List<WishList> _wishlists = [];
+  final List<WishList> _wishlists = [];
 
   // Instancias de Firebase
   //final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -249,7 +249,7 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
-                    value: _selectedWishlistId.isEmpty ? null : _selectedWishlistId,
+                    initialValue: _selectedWishlistId.isEmpty ? null : _selectedWishlistId,
                     items: [
                       const DropdownMenuItem(
                         value: '',

@@ -173,7 +173,7 @@ class UserDao {
         .collection('users')
         .doc(currentUser.uid)
         .collection('contacts')
-        .where('read', isEqualTo: false)
+        .where('status', isEqualTo: 'pending')
         .snapshots();
   }
 
