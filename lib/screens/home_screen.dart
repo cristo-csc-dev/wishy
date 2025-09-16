@@ -145,17 +145,38 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
           if (_selectedIndex == 2) {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CreateEditEventScreen()),
-            );
-            if (result != null && result is Event) {
-              setState(() {
-                //userEvents.add(result);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Evento "${result.name}" creado.')));
-            }
+            Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return FutureBuilder<List<Contact>>(
+                  future: UserDao().getAcceptedContacts(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return Scaffold(
+                        appBar: AppBar(title: const Text('Error')),
+                        body: Center(child: Text('Error: ${snapshot.error}')),
+                      );
+                    }
+                    if (!snapshot.hasData) {
+                      return const Scaffold(
+                        body: Center(child: Text('No se encontraron contactos')),
+                      );
+                    }
+
+                    final acceptedContacts = snapshot.data!;
+                    return CreateEditEventScreen(
+                      availableContacts: acceptedContacts,
+                    );
+                  },
+                );
+              },
+            ),
+          );
           } else if (_selectedIndex == 1) {
             final result = await Navigator.push(
               context,

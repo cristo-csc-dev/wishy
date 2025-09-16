@@ -23,9 +23,10 @@ class WishlistDao {
       throw Exception('Usuario no autenticado.');
     }
     return _db.collection('whishlists').where(
+        Filter.and(Filter('ownerId', isEqualTo: userId),
         Filter.or(
-          Filter('sharedWithUserIds', arrayContains: userId),
-          Filter('privacy', isEqualTo: 'public'),
+          Filter('sharedWithContactsIds', arrayContains: userId),
+          Filter('privacy', isEqualTo: 'public')),
         )
       )
       .snapshots();

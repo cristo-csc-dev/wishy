@@ -1,5 +1,4 @@
-// lib/screens/create_edit_event_screen.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/event_dao.dart';
@@ -10,15 +9,17 @@ import 'package:uuid/uuid.dart';
 
 class CreateEditEventScreen extends StatefulWidget {
   final Event? event;
+  final List<Contact>? availableContacts;
   
   
-  const CreateEditEventScreen({super.key, this.event}); // Si es null, es un nuevo evento; si no, para editar
+  const CreateEditEventScreen({super.key, this.event, this.availableContacts}); // Si es null, es un nuevo evento; si no, para editar
 
   @override
   State<CreateEditEventScreen> createState() => _CreateEditEventScreenState();
 }
 
 class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
+
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -66,51 +67,35 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       context: context,
       builder: (context) {
         // Clonar la lista actual para trabajar en el diálogo
-        List<String> tempSelected = List.from(_invitedUserIds);
+        List<String> tempSelectedIds = List.from(_invitedUserIds);
         return AlertDialog(
           title: const Text('Invitar Usuarios'),
-          content: StreamBuilder<QuerySnapshot>(
-            stream: UserDao().getAcceptedContactsStream(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                    height: 100,
-                    child: Center(child: CircularProgressIndicator()));
-              }
-              if (!snapshot.hasData) {
-                return const SizedBox(
-                  height: 100,
-                  child: Center(
-                      child: Text('No tienes contactos aceptados.',
-                          textAlign: TextAlign.center)),
-                );
-              }
-
-              final contacts = snapshot.data!;
-              return SingleChildScrollView(
-                child: Column(
-                  children: contacts.docs.map((contact) {
-                    final isSelected = _selectedInvitationIds.contains(contact.id);
-                    return CheckboxListTile(
-                      title: Text(contact['name'] ?? '--'),
-                      subtitle: Text(contact['email']),
-                      value: isSelected,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            _selectedInvitationIds.add(contact.id);
-                          } else {
-                            _selectedInvitationIds.remove(contact.id);
-                          }
-                        });
-                        (context as Element).markNeedsBuild();
-                      },
-                    );
-                  }).toList(),
-                ),
-              );
-            },
-          ),
+          content: (widget.availableContacts == null || widget.availableContacts!.isEmpty)?
+            const Scaffold(
+              body: Center(child: Text('No hay contactos disponibles.')),
+            ):
+            SingleChildScrollView(
+              child: Column(
+                children: widget.availableContacts!.map((contact) {
+                  final isSelected = tempSelectedIds.contains(contact.id);
+                  return CheckboxListTile(
+                    title: Text(contact.name ?? '--'),
+                    subtitle: Text(contact.email),
+                    value: isSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _invitedUserIds.add(contact.id);
+                        } else {
+                          _invitedUserIds.remove(contact.id);
+                        }
+                      });
+                      (context as Element).markNeedsBuild();
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // No guardar cambios
@@ -118,7 +103,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
             ),
             TextButton(
               onPressed: () => {
-                Navigator.pop(context, tempSelected)
+                Navigator.pop(context, _invitedUserIds)
               },
               child: const Text('Invitar'),
             ),
@@ -247,29 +232,31 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 label: const Text('Invitar Usuarios'),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 4.0,
-                children: _invitedUserIds.map((id) {
-                  //final contactName = availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: 'Usuario Desconocido', email: 'a@a.com')).name;
-                  return Chip(
-                    avatar: CircleAvatar(
-                      backgroundImage: /*UserDao().getUserById(id).firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'b@b.com')).avatarUrl != null
-                          ? NetworkImage(availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'c@c.com')).avatarUrl!)
-                          : */null,
-                      child: /*availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'd@d.com')).avatarUrl == null
-                          ? const Icon(Icons.person_outline, size: 18)
-                          : */null,
-                    ),
-                    label: Text(/*contactName??*/ '--'),
-                    onDeleted: () {
-                      setState(() {
-                        _invitedUserIds.remove(id);
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: _invitedUserIds.map((id) {
+                    //final contactName = availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: 'Usuario Desconocido', email: 'a@a.com')).name;
+                    return Chip(
+                      avatar: CircleAvatar(
+                        backgroundImage: /*UserDao().getUserById(id).firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'b@b.com')).avatarUrl != null
+                            ? NetworkImage(availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'c@c.com')).avatarUrl!)
+                            : */
+                            NetworkImage('https://img.icons8.com/?size=100&id=23309&format=png&color=000000'), // Imagen por defecto
+                        child: /*availableContactsForEvents.firstWhere((c) => c.id == id, orElse: () => Contact(id: id, name: '', email: 'd@d.com')).avatarUrl == null
+                            ? const Icon(Icons.person_outline, size: 18)
+                            : */
+                            const Icon(Icons.person_outline, size: 18),
+                      ),
+                      label: Text(/*contactName?? */'--'),
+                      onDeleted: () {
+                        setState(() {
+                          _invitedUserIds.remove(id);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
             ],
           ),
         ),
