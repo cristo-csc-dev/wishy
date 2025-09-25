@@ -1,7 +1,24 @@
 import 'package:wishy/models/wish_item.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum ListPrivacy { private, public, shared }
+enum ListPrivacy { 
+  
+  private, public, shared;
+
+  static ListPrivacy fromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'private':
+        return ListPrivacy.private;
+      case 'public':
+        return ListPrivacy.public;
+      case 'shared':
+        return ListPrivacy.shared;
+      default:
+        throw ArgumentError('Valor de privacidad inválido: $value');
+    }
+  }
+
+ }
 
 class WishList {
   final String id;
@@ -38,6 +55,7 @@ class WishList {
       name: data['name'] ?? '',
       description: data['description'] ?? '',
       ownerId: data['ownerId'] ?? '',
+      privacy: ListPrivacy.fromString(data['privacy'] ?? 'private'),
       sharedWithContactIds: sharedWith != null ? List<String>.from(sharedWith) : [],
       itemCount: data['itemCount'] ?? 0,
     );

@@ -2,7 +2,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/event_dao.dart';
-import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/event.dart';
 import 'package:wishy/models/contact.dart'; // Para seleccionar invitados
 import 'package:uuid/uuid.dart';

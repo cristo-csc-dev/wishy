@@ -13,7 +13,6 @@ class ContactRequestsScreen extends StatefulWidget {
 
 class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Acepta una solicitud de contacto
   Future<void> _acceptRequest(ContactRequest request) async {
@@ -22,34 +21,7 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
 
     try {
       // 1. Aceptar la solicitud en la base de datos del usuario actual
-      final userContactRef = _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('contacts')
-          .doc(request.id);
-
-      await userContactRef.update({
-        'acceptanceDate': FieldValue.serverTimestamp(),
-        'status': 'accepted',
-      });
-
-      // 2. Crear una entrada recíproca para el remitente
-      final senderContactRef = _firestore
-          .collection('users')
-          .doc(request.senderId)
-          .collection('contacts')
-          .doc(currentUser.uid);
-          
-      final Map<String, dynamic> currentUserData = {
-        'senderId': currentUser.uid,
-        'email': currentUser.email,
-        'name': currentUser.displayName ?? 'Anónimo',
-        'requestDate': FieldValue.serverTimestamp(),
-        'acceptanceDate': FieldValue.serverTimestamp(),
-        'status': 'accepted',
-      };
-      
-      await senderContactRef.set(currentUserData);
+      await acceptRequest(currentUser, request);
 
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -62,6 +34,13 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
         SnackBar(content: Text('Error al aceptar la solicitud: $e')),
       );
     }
+  }
+
+  Future<void> acceptRequest(User currentUser, ContactRequest request) async {
+    await UserDao().updateContact(currentUser, request);
+    
+    // 2. Crear una entrada recíproca para el remitente
+    UserDao().acceptRequest(currentUser, request);
   }
 
   // Rechaza una solicitud de contacto
@@ -93,16 +72,16 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
 
     if (currentUser == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Solicitudes de Contacto')),
+        appBar: AppBar(title: const Text('Notificaciones')),
         body: const Center(
-          child: Text('Inicia sesión para ver las solicitudes de contacto.'),
+          child: Text('Inicia sesión para ver las notificaciones.'),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Solicitudes de Contacto'),
+        title: const Text('Notificaciones'),
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -118,7 +97,7 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
-                child: Text('No tienes solicitudes de contacto pendientes.'));
+                child: Text('No notificaciones pendientes.'));
           }
 
           final requests = snapshot.data!.docs

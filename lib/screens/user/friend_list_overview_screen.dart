@@ -16,7 +16,7 @@ class FriendListsOverviewScreen extends StatelessWidget {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('Listas de ${contact.name}'),
+        title: Text('Listas de ${contact.name?? contact.email}'),
       ),
       body: StreamBuilder(
         stream: WishlistDao().getSharedWishlistsStreamSnapshot(contact.id), 

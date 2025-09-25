@@ -24,7 +24,6 @@ class ListDetailScreen extends StatefulWidget {
 
 class _ListDetailScreenState extends State<ListDetailScreen> {
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   late WishList _currentWishList; // Para poder modificarla
@@ -153,11 +152,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('wishlists')
-            .doc(_currentWishList.id)
-            .collection('items')
-            .snapshots(),
+        stream: WishlistDao().getListItems(_currentWishList),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
@@ -197,4 +192,5 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
           : null, // No mostrar FAB si es para regalar
     );
   }
+
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/models/contact.dart';
+import 'package:wishy/models/contact_request.dart';
 
 class UserDao {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -51,9 +52,9 @@ class UserDao {
     // Crea un documento con los datos de la solicitud en la subcolección del destinatario
     await _db
         .collection('users')
-        .doc(recipientUid)
-        .collection('contacts')
         .doc(currentUser.uid)
+        .collection('contacts')
+        .doc(recipientUid)
         .set({
       'userId': currentUser.uid,
       'name': currentUser.displayName,
@@ -177,4 +178,35 @@ class UserDao {
         .snapshots();
   }
 
+  Future<void> updateContact(User currentUser, ContactRequest request) async {
+    final userContactRef = _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('contacts')
+        .doc(request.id);
+    
+    await userContactRef.update({
+      'acceptanceDate': FieldValue.serverTimestamp(),
+      'status': 'accepted',
+    });
+  }
+
+  Future<void> acceptRequest(User currentUser, ContactRequest request) async {
+    final senderContactRef = _db
+        .collection('users')
+        .doc(request.senderId)
+        .collection('contacts')
+        .doc(currentUser.uid);
+        
+    final Map<String, dynamic> currentUserData = {
+      'senderId': currentUser.uid,
+      'email': currentUser.email,
+      'name': currentUser.displayName ?? 'Anónimo',
+      'requestDate': FieldValue.serverTimestamp(),
+      'acceptanceDate': FieldValue.serverTimestamp(),
+      'status': 'accepted',
+    };
+    
+    await senderContactRef.set(currentUserData);
+  }
 }

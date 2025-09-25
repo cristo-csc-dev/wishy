@@ -28,7 +28,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
-  //final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Cambia a 3 pestañas: 0 para Mis Listas, 1 para Listas para Regalar, 2 para Eventos
   int _selectedIndex = 0; 
@@ -44,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Deseos'),
+        title: const Text('Wishy'),
         leading: PopupMenuButton<String>(
           icon: const Icon(Icons.person),
           // Ajusta el offset para que el menú aparezca justo debajo del icono
@@ -146,37 +145,37 @@ class _HomeScreenState extends State<HomeScreen> {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
           if (_selectedIndex == 2) {
             Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) {
-                return FutureBuilder<List<Contact>>(
-                  future: UserDao().getAcceptedContacts(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    if (snapshot.hasError) {
-                      return Scaffold(
-                        appBar: AppBar(title: const Text('Error')),
-                        body: Center(child: Text('Error: ${snapshot.error}')),
-                      );
-                    }
-                    if (!snapshot.hasData) {
-                      return const Scaffold(
-                        body: Center(child: Text('No se encontraron contactos')),
-                      );
-                    }
+              MaterialPageRoute(
+                builder: (context) {
+                  return FutureBuilder<List<Contact>>(
+                    future: UserDao().getAcceptedContacts(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return Scaffold(
+                          appBar: AppBar(title: const Text('Error')),
+                          body: Center(child: Text('Error: ${snapshot.error}')),
+                        );
+                      }
+                      if (!snapshot.hasData) {
+                        return const Scaffold(
+                          body: Center(child: Text('No se encontraron contactos')),
+                        );
+                      }
 
-                    final acceptedContacts = snapshot.data!;
-                    return CreateEditEventScreen(
-                      availableContacts: acceptedContacts,
-                    );
-                  },
-                );
-              },
-            ),
-          );
+                      final acceptedContacts = snapshot.data!;
+                      return CreateEditEventScreen(
+                        availableContacts: acceptedContacts,
+                      );
+                    },
+                  );
+                },
+              ),
+            );
           } else if (_selectedIndex == 1) {
             final result = await Navigator.push(
               context,
@@ -547,6 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   //userWishLists.remove(list);
                 });
+                WishlistDao().deleteWishlist(list.id);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Lista "${list.name}" eliminada.')));

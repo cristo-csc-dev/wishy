@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/models/wish_list.dart';
 
 class WishlistDao {
   // Patrón Singleton
@@ -22,14 +23,24 @@ class WishlistDao {
     if (currentUser == null) {
       throw Exception('Usuario no autenticado.');
     }
-    return _db.collection('whishlists').where(
+    //return _db.collection('wishlists').where('ownerId', isEqualTo: userId).where('sharedWithContactIds', arrayContains: currentUser.uid).snapshots();
+    return _db.collection('wishlists').where(
+      Filter.and(
+        Filter.or(
+          Filter('sharedWithContactIds', arrayContains: currentUser.uid),
+          Filter('sharedWithContactIds', arrayContains: currentUser.uid)
+        ), 
+        Filter('ownerId', isEqualTo: userId)
+      )
+    ).snapshots();
+    /*return _db.collection('whishlists').where(
         Filter.and(Filter('ownerId', isEqualTo: userId),
         Filter.or(
-          Filter('sharedWithContactsIds', arrayContains: userId),
+          Filter('sharedWithContactsIds', arrayContains: currentUser.uid),
           Filter('privacy', isEqualTo: 'public')),
         )
       )
-      .snapshots();
+      .snapshots();*/
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getWishlistsStream(String userId) {
@@ -84,6 +95,18 @@ class WishlistDao {
 
   void createOrUpdateWishlist(String id, Map<String, Object> map) {
      _db.collection('wishlists').doc(id).set(map, SetOptions(merge: true));
+  }
+
+  void deleteWishlist(String id) {
+     _db.collection('wishlists').doc(id).delete();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(WishList currentWishList) {
+    return FirebaseFirestore.instance
+          .collection('wishlists')
+          .doc(currentWishList.id)
+          .collection('items')
+          .snapshots();
   }
 
 }
