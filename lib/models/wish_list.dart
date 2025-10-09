@@ -17,47 +17,42 @@ enum ListPrivacy {
         throw ArgumentError('Valor de privacidad inválido: $value');
     }
   }
+ }
 
+enum WishListFields {
+  ownerId, name, privacy, sharedWithContactIds, itemCount;
  }
 
 class WishList {
-  final String id;
-  String? ownerId;
-  String name;
-  String? description;
-  String? iconPath; // Podrías usar un Path o un String de un Emoji/Icono
-  ListPrivacy privacy;
-  List<String> sharedWithContactIds; // IDs de contactos/grupos con los que se comparte
-  List<WishItem> items;
-  DateTime? eventDate; // Fecha asociada a la lista (ej. cumpleaños)
-  bool allowMarkingAsBought; // Permitir a contactos marcar como comprado
-  int itemCount = 0; // Número de ítems en la lista
 
-  WishList({
-    required this.id,
-    required this.name,
-    this.ownerId,
-    this.description,
-    this.iconPath,
-    this.privacy = ListPrivacy.private,
-    this.sharedWithContactIds = const [],
-    this.items = const [],
-    this.eventDate,
-    this.allowMarkingAsBought = true,
-    this.itemCount = 0,
-  });
+  DocumentSnapshot? document;
+  Map<String, dynamic> data;
+
+  WishList({this.document, required this.data});
 
   factory WishList.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    final sharedWith = data['sharedWithContactIds'];
-    return WishList(
-      id: doc.id,
-      name: data['name'] ?? '',
-      description: data['description'] ?? '',
-      ownerId: data['ownerId'] ?? '',
-      privacy: ListPrivacy.fromString(data['privacy'] ?? 'private'),
-      sharedWithContactIds: sharedWith != null ? List<String>.from(sharedWith) : [],
-      itemCount: data['itemCount'] ?? 0,
-    );
+    return WishList(document: doc, data: doc.data() as Map<String, dynamic>);
   }
+
+  String? getId() {
+    return document?.id;
+  }
+
+  dynamic get(WishListFields field) {
+    return data[field.name];
+  }
+
+  void set(WishListFields field, dynamic value) {
+    data[field.name] = value;
+  }
+
+  // List<WishItem> get items {
+  //   if (data[WishListFields.items.name] != null) {
+  //     return (data[WishListFields.items.name] as List)
+  //         .map((item) => WishItem.fromMap(item as Map<String, dynamic>))
+  //         .toList();
+  //   }
+  //   data[WishListFields.items.name] = [];
+  //   return data[WishListFields.items.name] as List<WishItem>;
+  // }
 }

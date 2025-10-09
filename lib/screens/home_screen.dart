@@ -2,11 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wishy/dao/event_dao.dart';
+import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
-import 'package:wishy/screens/user/contact_request_screen.dart';
+import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/user/create_edit_contact_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/user/friend_list_overview_screen.dart';
@@ -92,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ContactRequestsScreen(),
+                      builder: (context) => const NotificationListScreen(),
                     ),
                   );
                 },
@@ -134,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildMyListsView(),
                 _buildGiftListsContactsView(),
-                _buildEventsView(), // ¡NUEVO!
+                //_buildEventsView(), // ¡NUEVO!
               ],
             ),
           ),
@@ -186,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 //userWishLists.add(result);
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lista "${result.name}" creada.')));
+                  SnackBar(content: Text('Lista "${result.get(WishListFields.name)}" creada.')));
             }
           } else { // Si no, crea una lista normal
             final result = await Navigator.push(
@@ -198,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 //userWishLists.add(result);
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lista "${result.name}" creada.')));
+                  SnackBar(content: Text('Lista "${result.get(WishListFields.name)}" creada.')));
             }
           }
         },
@@ -211,10 +212,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = _auth.currentUser;
     if (user != null) {
 
-      UserDao().getPendingRequests().listen((snapshot) {
+      NotificationDao().getNotificationsCount().then((notificationsCount) {
         if (mounted) {
           setState(() {
-            _pendingRequestsCount = snapshot.docs.length;
+            _pendingRequestsCount = notificationsCount;
           });
         }
       });
@@ -253,26 +254,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
-                  child: Text('De amigos', style: TextStyle(fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 1 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
+                  child: Text('Suyos', style: TextStyle(fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 1 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
                 ),
               ),
             ),
           ),
-          Expanded( // ¡NUEVA PESTAÑA!
-            child: InkWell(
-              onTap: () { setState(() { _selectedIndex = 2; }); },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                decoration: BoxDecoration(
-                  color: _selectedIndex == 2 ? Colors.blueGrey.shade100 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text('Para Eventos', style: TextStyle(fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 2 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
-                ),
-              ),
-            ),
-          ),
+        //   Expanded( // ¡NUEVA PESTAÑA!
+        //     child: InkWell(
+        //       onTap: () { setState(() { _selectedIndex = 2; }); },
+        //       child: Container(
+        //         padding: const EdgeInsets.symmetric(vertical: 12.0),
+        //         decoration: BoxDecoration(
+        //           color: _selectedIndex == 2 ? Colors.blueGrey.shade100 : Colors.transparent,
+        //           borderRadius: BorderRadius.circular(8),
+        //         ),
+        //         child: Center(
+        //           child: Text('Para Eventos', style: TextStyle(fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 2 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
+        //         ),
+        //       ),
+        //     ),
+        //   ),
         ],
       ),
     );
@@ -289,25 +290,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: WishlistDao().getWishlistsStreamSnapshot(user.uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+      builder: (context, myWishlistsSnapshot) {
+        if (myWishlistsSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+        if (myWishlistsSnapshot.hasError) {
+          return Center(child: Text('Error: ${myWishlistsSnapshot.error}'));
         }
 
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (!myWishlistsSnapshot.hasData || myWishlistsSnapshot.data!.docs.isEmpty) {
           return const Center(
             child: Text('No tienes listas de deseos. ¡Crea una!'),
           );
         }
 
         return ListView.builder(
-          itemCount: snapshot.data!.docs.length,
+          itemCount: myWishlistsSnapshot.data!.docs.length,
           itemBuilder: (context, index) {
-            final doc = snapshot.data!.docs[index];
+            final doc = myWishlistsSnapshot.data!.docs[index];
             final list = WishList.fromFirestore(doc);
             return ListCard(
               wishList: list,
@@ -330,12 +331,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 // No necesitamos setState() aquí
                 if (updatedList != null && updatedList is WishList) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lista "${updatedList.name}" actualizada.')));
+                      SnackBar(content: Text('Lista "${updatedList.get(WishListFields.name)}" actualizada.')));
                 }
               },
               onShare: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Compartir lista "${list.name}"')));
+                    SnackBar(content: Text('Compartir lista "${list.get(WishListFields.name)}"')));
               },
               onDelete: () {
                 _showDeleteConfirmationDialog(list);
@@ -535,7 +536,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Eliminar Lista'),
-          content: Text('¿Estás seguro de que quieres eliminar la lista "${list.name}"?'),
+          content: Text('¿Estás seguro de que quieres eliminar la lista "${list.get(WishListFields.name)}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -546,10 +547,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   //userWishLists.remove(list);
                 });
-                WishlistDao().deleteWishlist(list.id);
+                WishlistDao().deleteWishlist(list.getId()!);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Lista "${list.name}" eliminada.')));
+                    SnackBar(content: Text('Lista "${list.get(WishListFields.name)}" eliminada.')));
               },
               child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
             ),

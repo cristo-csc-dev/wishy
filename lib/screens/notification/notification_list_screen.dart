@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/notification_dao.dart';
+import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/notification.dart';
 import 'package:wishy/models/notification_type.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class NotificationListScreen extends StatefulWidget {
@@ -10,6 +10,10 @@ class NotificationListScreen extends StatefulWidget {
 
   @override
   State<NotificationListScreen> createState() => _NotificationListScreenState();
+
+  void _setState() {
+    toString();
+  }
 }
 
 class _NotificationListScreenState extends State<NotificationListScreen> {
@@ -38,6 +42,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Notificación aceptada.')),
       );
+      widget._setState();
     } catch (e) {
       print('Error al aceptar la notificación: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -58,12 +63,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
     try {
       // Actualiza el documento en Firestore para marcarlo como rechazado
-      await _db
-          .collection('users')
-          .doc(user.uid)
-          .collection('notifications')
-          .doc(notification.id)
-          .update({'status': 'rejected', 'isRead': true});
+      await UserDao().rejectContactRequest(user, notification);
 
       // TODO: Aquí se debe implementar la lógica real,
       // por ejemplo: rechazar la solicitud de contacto

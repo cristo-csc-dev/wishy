@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/contact_request.dart';
+import 'package:wishy/models/notification.dart';
 
 class UserDao {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -208,5 +209,23 @@ class UserDao {
     };
     
     await senderContactRef.set(currentUserData);
+  }
+
+  Future<void> rejectContactRequest(User user, AppNotification notification) async {
+    await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notification.id)
+        .update({'status': 'rejected', 'isRead': true});
+  }
+
+  Future<void> declineRequest(User currentUser, String requestId) async {
+    await _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('contacts')
+        .doc(requestId)
+        .delete();
   }
 }

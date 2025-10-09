@@ -11,6 +11,7 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _displayNameController = TextEditingController();
+  final _displayEmailController = TextEditingController();
   final _photoUrlController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
@@ -21,6 +22,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final user = _auth.currentUser;
     if (user != null) {
       _displayNameController.text = user.displayName ?? '';
+      _displayEmailController.text = user.email ?? '';
       _photoUrlController.text = user.photoURL ?? '';
     }
   }
@@ -101,6 +103,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 controller: _displayNameController,
                 decoration: InputDecoration(
                   labelText: 'Nombre de usuario',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingresa tu nombre';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              // Campo para el nombre de visualización
+              TextFormField(
+                controller: _displayEmailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

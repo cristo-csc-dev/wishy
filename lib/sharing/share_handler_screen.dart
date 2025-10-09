@@ -257,8 +257,9 @@ class _ShareHandlerScreenState extends State<ShareHandlerScreen> {
                       ),
                       ..._wishlists.map((list) {
                         return DropdownMenuItem(
-                          value: list.id,
-                          child: Text(list.name),
+                          value: list.getId(),
+                          child: Text(list.get(WishListFields.name),
+                          )
                         );
                       }),
                     ],

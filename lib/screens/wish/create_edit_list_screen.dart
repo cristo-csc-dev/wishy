@@ -7,15 +7,6 @@ import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:uuid/uuid.dart'; // Añadir al pubspec.yaml: uuid: ^4.0.0
 
-// Simulación de contactos para selección (normalmente vendrían de un servicio)
-final List<String> availableContactIds = ['contact1', 'contact2', 'contact3'];
-final Map<String, String> contactNames = {
-  'contact1': 'María López',
-  'contact2': 'Pedro García',
-  'contact3': 'Laura Ruíz',
-};
-
-
 class CreateEditListScreen extends StatefulWidget {
   final WishList? wishList; // Si es null, es una nueva lista; si no, es para editar
 
@@ -28,7 +19,6 @@ class CreateEditListScreen extends StatefulWidget {
 class _CreateEditListScreenState extends State<CreateEditListScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
   ListPrivacy _selectedPrivacy = ListPrivacy.private;
   List<String> _selectedContactIds = [];
   DateTime? _selectedEventDate;
@@ -38,25 +28,20 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.wishList?.name ?? '');
-    _descriptionController =
-        TextEditingController(text: widget.wishList?.description ?? '');
-    _selectedPrivacy = widget.wishList?.privacy ?? ListPrivacy.private;
-    _selectedContactIds = List.from(widget.wishList?.sharedWithContactIds ?? []);
-    _selectedEventDate = widget.wishList?.eventDate;
-    _allowMarkingAsBought = widget.wishList?.allowMarkingAsBought ?? true;
+    _nameController = TextEditingController(text: widget.wishList?.get(WishListFields.name) ?? '');
+    _selectedPrivacy = widget.wishList?.get(WishListFields.privacy) ?? ListPrivacy.private;
+    _selectedContactIds = List.from(widget.wishList?.get(WishListFields.sharedWithContactIds) ?? []);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
     super.dispose();
   }
 
   void _saveList() async{
     if (_formKey.currentState!.validate()) {
-      final String id = widget.wishList?.id ?? const Uuid().v4();
+      final String id = widget.wishList?.getId() ?? const Uuid().v4();
 
       try {
         final user = FirebaseAuth.instance.currentUser;
@@ -65,12 +50,10 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
         }
         WishlistDao().createOrUpdateWishlist(id, {
           'name': _nameController.text,
-          'description': _descriptionController.text,
           'privacy': _selectedPrivacy.toString().split('.').last,
           'sharedWithContactIds': _selectedPrivacy == ListPrivacy.shared
               ? _selectedContactIds
               : [],
-          'allowMarkingAsBought': _allowMarkingAsBought,
           'ownerId': user.uid,
           'createdAt': FieldValue.serverTimestamp(),
         });
@@ -81,20 +64,13 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
         return;
       }
 
-      final WishList newList = WishList(
-        id: id,
-        name: _nameController.text,
-        description: _descriptionController.text.isNotEmpty
-            ? _descriptionController.text
-            : null,
-        privacy: _selectedPrivacy,
-        sharedWithContactIds: _selectedPrivacy == ListPrivacy.shared
+      final WishList newList = WishList(data:{
+        WishListFields.name.name: _nameController.text,
+        WishListFields.privacy.name: _selectedPrivacy,
+        WishListFields.sharedWithContactIds.name: _selectedPrivacy == ListPrivacy.shared
             ? _selectedContactIds
-            : [], // Solo si es compartida
-        eventDate: _selectedEventDate,
-        allowMarkingAsBought: _allowMarkingAsBought,
-        items: widget.wishList?.items ?? [], // Mantiene los ítems existentes
-      );
+            : [], // Mantiene los ítems existentes
+    });
       Navigator.pop(context, newList); // Devuelve la nueva/actualizada lista
     }
   }
@@ -194,14 +170,6 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción (Opcional)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
               const SizedBox(height: 24),
               Text(
                 'Privacidad de la Lista:',
@@ -250,7 +218,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
                   runSpacing: 4.0,
                   children: _selectedContactIds.map((id) {
                     return Chip(
-                      label: Text(contactNames[id] ?? id),
+                      label: Text("MiContacto"),
                       onDeleted: () {
                         setState(() {
                           _selectedContactIds.remove(id);

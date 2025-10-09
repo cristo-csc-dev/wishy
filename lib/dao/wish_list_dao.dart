@@ -28,19 +28,11 @@ class WishlistDao {
       Filter.and(
         Filter.or(
           Filter('sharedWithContactIds', arrayContains: currentUser.uid),
-          Filter('sharedWithContactIds', arrayContains: currentUser.uid)
+          Filter('privacy', isEqualTo: 'public')
         ), 
         Filter('ownerId', isEqualTo: userId)
       )
     ).snapshots();
-    /*return _db.collection('whishlists').where(
-        Filter.and(Filter('ownerId', isEqualTo: userId),
-        Filter.or(
-          Filter('sharedWithContactsIds', arrayContains: currentUser.uid),
-          Filter('privacy', isEqualTo: 'public')),
-        )
-      )
-      .snapshots();*/
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getWishlistsStream(String userId) {
@@ -61,13 +53,12 @@ class WishlistDao {
     try {
       await _db.runTransaction((transaction) async {
         final wishlistRef = _db.collection('wishlists').doc(wishlistId);
-        final itemsRef = wishlistRef.collection('items');
+        CollectionReference itemsRef = wishlistRef.collection('items');
 
-        itemsRef.add(itemData);
+        DocumentReference itemsRefUpdated = await itemsRef.add(itemData);
 
-        final wishlistDoc = await transaction.get(wishlistRef);
-        final currentCount = wishlistDoc.data()?['itemCount'] ?? 0;
-        transaction.update(wishlistRef, {'itemCount': currentCount + 1});
+        AggregateQuerySnapshot numItemsSnapshot = await _db.collection('wishlists').doc(wishlistId).collection('items').count().get();
+        transaction.update(wishlistRef, {'itemCount': (numItemsSnapshot.count??0 + 1)});
       });
     } catch (e) {
       // Devolvemos el error para que el UI pueda manejarlo
@@ -79,13 +70,11 @@ class WishlistDao {
     try {
       await _db.runTransaction((transaction) async {
         final wishlistRef = _db.collection('wishlists').doc(wishlistId);
-        final itemRef = wishlistRef.collection('items').doc(itemId);
+        CollectionReference itemsRef = wishlistRef.collection('items');
+        await itemsRef.doc(itemId).delete();
 
-        transaction.delete(itemRef);
-
-        final wishlistDoc = await transaction.get(wishlistRef);
-        final currentCount = wishlistDoc.data()?['itemCount'] ?? 0;
-        transaction.update(wishlistRef, {'itemCount': currentCount - 1});
+        AggregateQuerySnapshot numItemsSnapshot = await _db.collection('wishlists').doc(wishlistId).collection('items').count().get();
+        transaction.update(wishlistRef, {'itemCount': (numItemsSnapshot.count??0 - 1)});
       });
     } catch (e) {
       // Devolvemos el error para que el UI pueda manejarlo
@@ -104,7 +93,7 @@ class WishlistDao {
   Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(WishList currentWishList) {
     return FirebaseFirestore.instance
           .collection('wishlists')
-          .doc(currentWishList.id)
+          .doc(currentWishList.getId())
           .collection('items')
           .snapshots();
   }

@@ -18,13 +18,13 @@ class ListCard extends StatelessWidget {
   });
 
   String _getPrivacyStatus() {
-    switch (wishList.privacy) {
+    switch (wishList.get(WishListFields.privacy)) {
       case ListPrivacy.private:
         return 'Privada';
       case ListPrivacy.public:
         return 'Pública (Enlace)';
       case ListPrivacy.shared:
-        return 'Compartida con ${wishList.sharedWithContactIds.length} pers.';
+        return 'Compartida con ${wishList.get(WishListFields.sharedWithContactIds).length} pers.';
       default:
         return 'Desconocido';
     }
@@ -50,7 +50,7 @@ class ListCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      wishList.name,
+                      wishList.get(WishListFields.name),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -83,7 +83,7 @@ class ListCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${wishList.itemCount} deseos',
+                '${wishList.get(WishListFields.itemCount)} deseos',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 4),
@@ -91,26 +91,26 @@ class ListCard extends StatelessWidget {
                 'Estado: ${_getPrivacyStatus()}',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
-              if (wishList.items.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: wishList.items
-                      .take(3)
-                      .map((item) => Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundImage: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                                  ? NetworkImage(item.imageUrl!)
-                                  : null,
-                              child: item.imageUrl == null || item.imageUrl!.isEmpty
-                                  ? const Icon(Icons.shopping_bag_outlined, size: 20)
-                                  : null,
-                            ),
-                          ))
-                      .toList(),
-                ),
-              ],
+              // if (wishList.items.isNotEmpty) ...[
+              //   const SizedBox(height: 12),
+              //   Row(
+              //     children: wishList.items
+              //         .take(3)
+              //         .map((item) => Padding(
+              //               padding: const EdgeInsets.only(right: 8.0),
+              //               child: CircleAvatar(
+              //                 radius: 20,
+              //                 backgroundImage: item.imageUrl != null && item.imageUrl!.isNotEmpty
+              //                     ? NetworkImage(item.imageUrl!)
+              //                     : null,
+              //                 child: item.imageUrl == null || item.imageUrl!.isEmpty
+              //                     ? const Icon(Icons.shopping_bag_outlined, size: 20)
+              //                     : null,
+              //               ),
+              //             ))
+              //         .toList(),
+              //   ),
+              // ],
             ],
           ),
         ),

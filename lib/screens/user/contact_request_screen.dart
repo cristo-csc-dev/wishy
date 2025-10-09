@@ -49,12 +49,7 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
     if (currentUser == null) return;
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('contacts')
-          .doc(requestId)
-          .delete();
+      await UserDao().declineRequest(currentUser, requestId);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Solicitud de contacto rechazada.')),
