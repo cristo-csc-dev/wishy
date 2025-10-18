@@ -38,7 +38,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     final newWish = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const AddWishScreen(),
+        builder: (context) => AddWishScreen(wishList: _currentWishList,),
       ),
     );
     if (newWish != null && newWish is WishItem) {

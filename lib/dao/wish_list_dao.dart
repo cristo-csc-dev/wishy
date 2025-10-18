@@ -66,6 +66,15 @@ class WishlistDao {
     }
   }
 
+  Future<void> updateItem(String wishlistId, String itemId,  Map<String, dynamic> itemData) async {
+    try {
+      await _db.collection('wishlists').doc(wishlistId).collection('items').doc(itemId).set(itemData, SetOptions(merge: true));
+    } catch (e) {
+      // Devolvemos el error para que el UI pueda manejarlo
+      throw Exception('Error al actualizar el deseo: $e');
+    }
+  }
+
   Future<void> removeItem(String wishlistId, String itemId) async {
     try {
       await _db.runTransaction((transaction) async {

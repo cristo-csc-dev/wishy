@@ -1,4 +1,3 @@
-import 'package:wishy/models/wish_item.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum ListPrivacy { 
@@ -27,6 +26,7 @@ class WishList {
 
   DocumentSnapshot? document;
   Map<String, dynamic> data;
+  String? id;
 
   WishList({this.document, required this.data});
 
@@ -38,6 +38,10 @@ class WishList {
     return document?.id;
   }
 
+  setId(String id) {
+    this.id = id;
+  }
+
   dynamic get(WishListFields field) {
     return data[field.name];
   }
@@ -45,14 +49,4 @@ class WishList {
   void set(WishListFields field, dynamic value) {
     data[field.name] = value;
   }
-
-  // List<WishItem> get items {
-  //   if (data[WishListFields.items.name] != null) {
-  //     return (data[WishListFields.items.name] as List)
-  //         .map((item) => WishItem.fromMap(item as Map<String, dynamic>))
-  //         .toList();
-  //   }
-  //   data[WishListFields.items.name] = [];
-  //   return data[WishListFields.items.name] as List<WishItem>;
-  // }
 }

@@ -1,12 +1,12 @@
-import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/services.dart';
 import 'package:wishy/screens/login/login_screen.dart';
 import 'firebase_options.dart'; // Importa el archivo de opciones de Firebase
 import 'package:wishy/screens/home_screen.dart';
-import 'dart:developer' as dev;
+
+// 1. CLAVE GLOBAL: Define una clave global para acceder al NavigatorState desde cualquier lugar.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
 
@@ -32,14 +32,10 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
 
-  String _sharedLink = "{}";
-  static const platform = MethodChannel('com.wishysa.wishy/channel');
-
   @override
   void initState() {
     super.initState();
     // WishDao().deleteAllWishes();
-    platform.setMethodCallHandler(_handleMethodCalls);
   }
 
   @override
@@ -83,13 +79,4 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
-
-  Future<void> _handleMethodCalls(MethodCall call) async {
-    if (call.method == 'onSharedText') {
-      _sharedLink = call.arguments;
-      final Map<String, dynamic> jsonData = jsonDecode(_sharedLink);
-      dev.log("Received shared text: $jsonData");
-    }
-  }
-
 }

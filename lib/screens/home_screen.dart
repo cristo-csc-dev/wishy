@@ -1,24 +1,30 @@
+import 'dart:convert';
+import 'dart:developer' as dev;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
+import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/user/create_edit_contact_screen.dart';
+import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/user/friend_list_overview_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
+import 'package:wishy/screens/sharing/add_wish_to_lists_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
 import 'package:wishy/models/event.dart'; // ¡NUEVO!
 import 'package:wishy/screens/event/create_edit_event_screen.dart'; // ¡NUEVO!
 import 'package:wishy/screens/event/event_detail_screen.dart'; // ¡NUEVO!
-
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +35,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
+  String _sharedLink = "{}";
+  static const platform = MethodChannel('com.wishysa.wishy/channel');
+
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Cambia a 3 pestañas: 0 para Mis Listas, 1 para Listas para Regalar, 2 para Eventos
   int _selectedIndex = 0; 
@@ -38,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchPendingRequestsCount();
+    platform.setMethodCallHandler(_handleMethodCalls);
   }
 
   @override
@@ -566,5 +577,25 @@ class _HomeScreenState extends State<HomeScreen> {
     // y navegará automáticamente a la pantalla de autenticación.
     // Simplemente cierra la pantalla de perfil.
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  Future<void> _handleMethodCalls(MethodCall call) async {
+    if (call.method == 'onSharedText') {
+      _sharedLink = call.arguments;
+      final Map<String, dynamic> jsonData = jsonDecode(_sharedLink);
+      dev.log("Received shared text: $jsonData");
+      WishItem wishDataItem = WishItem(
+        id: const Uuid().v4(),
+        name: jsonData['title'] ?? '',
+        productUrl:  jsonData['link'] ?? '',
+      );
+
+      // Navegamos usando el contexto válido obtenido del GlobalKey
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AddWishScreen(wishItem: wishDataItem),
+        ),
+      );
+    }
   }
 }
