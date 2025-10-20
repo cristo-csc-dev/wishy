@@ -44,6 +44,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (user != null) {
         try {
           await user.updateDisplayName(_displayNameController.text.trim());
+          // await user.updateEmail(_displayEmailController.text.trim());
           await user.updatePhotoURL(_photoUrlController.text.trim());
 
           if (mounted) {
@@ -118,6 +119,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               // Campo para el nombre de visualización
               TextFormField(
                 controller: _displayEmailController,
+                enabled: false,
                 decoration: InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(

@@ -24,29 +24,35 @@ enum WishListFields {
 
 class WishList {
 
-  DocumentSnapshot? document;
-  Map<String, dynamic> data;
   String? id;
+  String name;
+  ListPrivacy privacy;
+  int itemCount = 0;
+  String ownerId;
+  List<String> sharedWithContactIds = [];
 
-  WishList({this.document, required this.data});
+  WishList({required this.name, required this.privacy, required this.ownerId, this.sharedWithContactIds = const []});
 
   factory WishList.fromFirestore(DocumentSnapshot doc) {
-    return WishList(document: doc, data: doc.data() as Map<String, dynamic>);
+    var result = WishList(
+      name: doc.get('name'),
+      privacy: ListPrivacy.fromString(doc.get('privacy')),
+      sharedWithContactIds: doc.get('sharedWithContactIds') != null
+          ? List<String>.from(doc.get('sharedWithContactIds'))
+          : [],
+      ownerId: doc.get('ownerId'),
+    );
+    result.id = doc.id;
+    return result;
   }
 
-  String? getId() {
-    return document?.id;
-  }
-
-  setId(String id) {
-    this.id = id;
-  }
-
-  dynamic get(WishListFields field) {
-    return data[field.name];
-  }
-
-  void set(WishListFields field, dynamic value) {
-    data[field.name] = value;
+  Map<String, dynamic> get data {
+    return {
+      'name': name,
+      'privacy': privacy.toString().split('.').last,
+      'sharedWithContactIds': sharedWithContactIds ?? [],
+      'ownerId': ownerId,
+      'itemCount': itemCount,
+    };
   }
 }

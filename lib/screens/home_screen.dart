@@ -56,44 +56,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wishy'),
-        leading: PopupMenuButton<String>(
-          icon: const Icon(Icons.person),
-          // Ajusta el offset para que el menú aparezca justo debajo del icono
-          offset: const Offset(0, kToolbarHeight),
-          onSelected: (String result) async {
-            if (result == 'profile') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              );
-            } else if (result == 'logout') {
-              await FirebaseAuth.instance.signOut();
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'profile',
-              child: Row(
-                children: [
-                  Icon(Icons.edit, color: Colors.indigo),
-                  SizedBox(width: 8),
-                  Text('Editar Perfil'),
-                ],
-              ),
-            ),
-            const PopupMenuItem<String>(
-              value: 'logout',
-              child: Row(
-                children: [
-                  Icon(Icons.logout, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Cerrar Sesión'),
-                ],
-              ),
-            ),
-          ],
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
         ),
         actions: [
           Stack(
@@ -137,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      drawer: _buildAppDrawer(),
       body: Column(
         children: [
           _buildSegmentedControl(),
@@ -198,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 //userWishLists.add(result);
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lista "${result.get(WishListFields.name)}" creada.')));
+                  SnackBar(content: Text('Lista "${result.name}" creada.')));
             }
           } else { // Si no, crea una lista normal
             final result = await Navigator.push(
@@ -210,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 //userWishLists.add(result);
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lista "${result.get(WishListFields.name)}" creada.')));
+                  SnackBar(content: Text('Lista "${result.name}" creada.')));
             }
           }
         },
@@ -222,14 +190,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _fetchPendingRequestsCount() {
     final user = _auth.currentUser;
     if (user != null) {
-
-      NotificationDao().getNotificationsCount().then((notificationsCount) {
-        if (mounted) {
+      NotificationDao().getNotificationsCount((querySnapshot) => {
           setState(() {
-            _pendingRequestsCount = notificationsCount;
-          });
+            _pendingRequestsCount = querySnapshot.docs.length;
+          }),
         }
-      });
+      );
     }
   }
 
@@ -342,12 +308,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 // No necesitamos setState() aquí
                 if (updatedList != null && updatedList is WishList) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lista "${updatedList.get(WishListFields.name)}" actualizada.')));
+                      SnackBar(content: Text('Lista "${updatedList.name}" actualizada.')));
                 }
               },
               onShare: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Compartir lista "${list.get(WishListFields.name)}"')));
+                    SnackBar(content: Text('Compartir lista "${list.name}"')));
               },
               onDelete: () {
                 _showDeleteConfirmationDialog(list);
@@ -547,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Eliminar Lista'),
-          content: Text('¿Estás seguro de que quieres eliminar la lista "${list.get(WishListFields.name)}"?'),
+          content: Text('¿Estás seguro de que quieres eliminar la lista "${list.name}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -558,10 +524,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   //userWishLists.remove(list);
                 });
-                WishlistDao().deleteWishlist(list.getId()!);
+                WishlistDao().deleteWishlist(list.id!);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Lista "${list.get(WishListFields.name)}" eliminada.')));
+                    SnackBar(content: Text('Lista "${list.name}" eliminada.')));
               },
               child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
             ),
@@ -597,5 +563,65 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+  }
+
+  // Widget para construir el panel lateral (Drawer)
+  Widget _buildAppDrawer() {
+    final user = _auth.currentUser;
+
+    return Drawer(
+      child: ListView(
+        // Elimina cualquier padding del ListView.
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          UserAccountsDrawerHeader(
+            accountName: Text(user?.displayName ?? "Nombre de Usuario"),
+            accountEmail: Text(user?.email ?? ""),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage:
+                  user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
+              child: user?.photoURL == null
+                  ? const Icon(
+                      Icons.person_outline,
+                      size: 40,
+                      color: Colors.blueGrey,
+                    )
+                  : null,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.blueGrey,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.edit, color: Colors.indigo),
+            title: const Text('Editar Perfil'),
+            onTap: () {
+              // Cierra el drawer
+              Navigator.pop(context);
+              // Navega a la pantalla de perfil
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Cerrar Sesión'),
+            onTap: () {
+              // Cierra el drawer
+              Navigator.pop(context);
+              // Llama a la función para cerrar sesión
+              _signOut();
+            },
+          ),
+          // Puedes añadir más ListTiles aquí para futuras opciones de menú.
+        ],
+      ),
+    );
   }
 }

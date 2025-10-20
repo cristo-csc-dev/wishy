@@ -212,8 +212,8 @@ class _AddWishToListsScreenState extends State<AddWishToListsScreen> {
                     final isSelected = _selectedWishlists.contains(wishlist);
 
                     return ListTile(
-                      title: Text(wishlist.get(WishListFields.name) ?? 'Sin Nombre'),
-                      subtitle: Text(wishlist.get(WishListFields.privacy), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      title: Text(wishlist.name),
+                      subtitle: Text(wishlist.privacy.name, maxLines: 1, overflow: TextOverflow.ellipsis),
                       leading: Icon(
                         isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
                         color: isSelected ? Colors.indigo : Colors.grey,

@@ -30,6 +30,7 @@ class UserDao {
   // Función para enviar una solicitud de contacto
   Future<void> sendContactRequest({
     required String email,
+    required String? message,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -59,6 +60,7 @@ class UserDao {
         .set({
       'userId': currentUser.uid,
       'name': currentUser.displayName,
+      'message': message,
       'email': currentUser.email,
       'status': 'pending',
       'requestDate': Timestamp.now(),

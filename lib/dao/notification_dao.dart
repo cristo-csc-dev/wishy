@@ -22,19 +22,18 @@ class NotificationDao {
             snapshot.docs.map((doc) => AppNotification.fromFirestore(doc)).toList());
   }
 
-  Future<int> getNotificationsCount() async {
+  void getNotificationsCount(Function(QuerySnapshot) onEvent) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      return Future.value(0);
+      return;
     }
 
     // Escucha los cambios en la subcolección de notificaciones del usuario actual.
-    AggregateQuerySnapshot query = await _db
-        .collection('users')
-        .doc(uid)
-        .collection('notifications')
-        .count()
-        .get();
-   return query.count?? 0;
+    _db.collection('users')
+      .doc(uid)
+      .collection('notifications').snapshots().listen(
+        (event) => onEvent(event),
+        onError: (error) => print("Error al obtener el conteo de notificaciones: $error"),
+      );
   }
 }

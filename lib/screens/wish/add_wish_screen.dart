@@ -107,15 +107,16 @@ class _AddWishScreenState extends State<AddWishScreen> {
 
       // Create a new list if a name was provided
       if (newListName.isNotEmpty) {
-        final newList = WishList(data: {});
-        newList.set(WishListFields.name, newListName);
-        newList.set(WishListFields.ownerId, user.uid);
-        newList.set(WishListFields.privacy, 'Private');
-        newList.setId(await wishlistDao.createWishlist(newList.data));
+        final newList = WishList(
+          name: newListName,
+          privacy: ListPrivacy.private,
+          ownerId: user.uid,
+        );
+        newList.id = await wishlistDao.createWishlist(newList.data);
       }
 
       // If we are editing an existing wish
-      if (widget.wishItem != null && widget.wishList != null) {
+      if (widget.wishItem != null && widget.wishList != null && widget.wishList!.id != null) {
         await wishlistDao.updateItem(
             widget.wishList!.id!, wishItem.id, wishItem.toMap());
       } else {
@@ -303,13 +304,13 @@ class _AddWishScreenState extends State<AddWishScreen> {
                             ...docs.map((doc) {
                               final wishlist = WishList.fromFirestore(doc);
                               final isSelected =
-                                  _selectedWishlistIds.contains(wishlist.getId());
+                                  _selectedWishlistIds.contains(wishlist.id);
                               return CheckboxListTile(
-                                title: Text(wishlist.get( WishListFields.name) ?? ''),
-                                subtitle: Text(wishlist.get(  WishListFields.privacy) ?? ''),
+                                title: Text(wishlist.name),
+                                subtitle: Text(wishlist.privacy.name),
                                 value: isSelected,
                                 onChanged: (_) =>
-                                    _toggleWishlistSelection(wishlist.getId()!),
+                                    _toggleWishlistSelection(wishlist.id!),
                                 activeColor: Colors.indigo,
                               );
                             }).toList(),

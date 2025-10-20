@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class WishItem {
   final String id;
   String name;
@@ -37,20 +39,21 @@ class WishItem {
     };
   }
 
-  static WishItem fromMap(Map<String, dynamic> itemData) {
+  static WishItem fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return WishItem(
-      id: itemData['id'] ?? '',
-      name: itemData['name'] ?? '',
-      productUrl: itemData['productUrl'],
-      estimatedPrice: (itemData['estimatedPrice'] != null)
-          ? (itemData['estimatedPrice'] as num).toDouble()
+      id: doc.id,
+      name: data['name'] ?? '',
+      productUrl: data['productUrl'],
+      estimatedPrice: (data['estimatedPrice'] != null)
+          ? (data['estimatedPrice'] as num).toDouble()
           : null,
-      suggestedStore: itemData['suggestedStore'],
-      notes: itemData['notes'],
-      imageUrl: itemData['imageUrl'],
-      priority: itemData['priority'] ?? 3,
-      isBought: itemData['isBought'] ?? false,
-      boughtById: itemData['boughtById'],
+      suggestedStore: data['suggestedStore'],
+      notes: data['notes'],
+      imageUrl: data['imageUrl'],
+      priority: data['priority'] ?? 3,
+      isBought: data['isBought'] ?? false,
+      boughtById: data['boughtById'],
     );
   }
 }

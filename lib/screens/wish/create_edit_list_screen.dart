@@ -28,9 +28,9 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.wishList?.get(WishListFields.name) ?? '');
-    _selectedPrivacy = widget.wishList?.get(WishListFields.privacy) ?? ListPrivacy.private;
-    _selectedContactIds = List.from(widget.wishList?.get(WishListFields.sharedWithContactIds) ?? []);
+    _nameController = TextEditingController(text: widget.wishList?.name ?? '');
+    _selectedPrivacy = widget.wishList?.privacy ?? ListPrivacy.private;
+    _selectedContactIds = List.from(widget.wishList?.sharedWithContactIds ?? []);
   }
 
   @override
@@ -41,7 +41,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
 
   void _saveList() async{
     if (_formKey.currentState!.validate()) {
-      final String id = widget.wishList?.getId() ?? const Uuid().v4();
+      final String id = widget.wishList?.id ?? const Uuid().v4();
 
       try {
         final user = FirebaseAuth.instance.currentUser;
@@ -64,13 +64,14 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
         return;
       }
 
-      final WishList newList = WishList(data:{
-        WishListFields.name.name: _nameController.text,
-        WishListFields.privacy.name: _selectedPrivacy,
-        WishListFields.sharedWithContactIds.name: _selectedPrivacy == ListPrivacy.shared
+      final WishList newList = WishList(
+        name: _nameController.text,
+        privacy: _selectedPrivacy,
+        sharedWithContactIds: _selectedPrivacy == ListPrivacy.shared
             ? _selectedContactIds
-            : [], // Mantiene los ítems existentes
-    });
+            : [],
+        ownerId: FirebaseAuth.instance.currentUser!.uid,
+      );
       Navigator.pop(context, newList); // Devuelve la nueva/actualizada lista
     }
   }
@@ -229,33 +230,33 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Permitir marcar como "Comprado"',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  Switch(
-                    value: _allowMarkingAsBought,
-                    onChanged: (value) {
-                      setState(() {
-                        _allowMarkingAsBought = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              ListTile(
-                title: Text(
-                  _selectedEventDate == null
-                      ? 'Asociar fecha de evento (Opcional)'
-                      : 'Fecha del evento: ${_selectedEventDate!.toLocal().toIso8601String().split('T')[0]}',
-                ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context),
-              ),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              //     Text(
+              //       'Permitir marcar como "Comprado"',
+              //       style: Theme.of(context).textTheme.titleMedium,
+              //     ),
+              //     Switch(
+              //       value: _allowMarkingAsBought,
+              //       onChanged: (value) {
+              //         setState(() {
+              //           _allowMarkingAsBought = value;
+              //         });
+              //       },
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(height: 24),
+              // ListTile(
+              //   title: Text(
+              //     _selectedEventDate == null
+              //         ? 'Asociar fecha de evento (Opcional)'
+              //         : 'Fecha del evento: ${_selectedEventDate!.toLocal().toIso8601String().split('T')[0]}',
+              //   ),
+              //   trailing: const Icon(Icons.calendar_today),
+              //   onTap: () => _selectDate(context),
+              // ),
             ],
           ),
         ),

@@ -18,13 +18,13 @@ class ListCard extends StatelessWidget {
   });
 
   String _getPrivacyStatus() {
-    switch (wishList.get(WishListFields.privacy)) {
+    switch (wishList.privacy) {
       case ListPrivacy.private:
         return 'Privada';
       case ListPrivacy.public:
         return 'Pública (Enlace)';
       case ListPrivacy.shared:
-        return 'Compartida con ${wishList.get(WishListFields.sharedWithContactIds).length} pers.';
+        return 'Compartida con ${wishList.sharedWithContactIds.length} pers.';
       default:
         return 'Desconocido';
     }
@@ -50,7 +50,7 @@ class ListCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      wishList.get(WishListFields.name),
+                      wishList.name,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -69,10 +69,10 @@ class ListCard extends StatelessWidget {
                         value: 'edit',
                         child: Text('Editar'),
                       ),
-                      const PopupMenuItem<String>(
-                        value: 'share',
-                        child: Text('Compartir'),
-                      ),
+                      // const PopupMenuItem<String>(
+                      //   value: 'share',
+                      //   child: Text('Compartir'),
+                      // ),
                       const PopupMenuItem<String>(
                         value: 'delete',
                         child: Text('Eliminar'),
@@ -83,7 +83,7 @@ class ListCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${wishList.get(WishListFields.itemCount)} deseos',
+                '${wishList.itemCount} deseos',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 4),

@@ -43,7 +43,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     );
     if (newWish != null && newWish is WishItem) {
       setState(() {
-        WishlistDao().addItem(_currentWishList.getId()!, newWish.toMap());
+        WishlistDao().addItem(_currentWishList.id!, newWish.toMap());
       });
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));
@@ -54,7 +54,10 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     final updatedWish = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddWishScreen(wishItem: WishItem.fromMap(wishItem.data() as Map<String, dynamic>)),
+        builder: (context) => AddWishScreen(
+          wishItem: WishItem.fromFirestore(wishItem),
+          wishList: widget.wishList,
+        ),
       ),
     );
     if (updatedWish != null && updatedWish is WishItem) {
@@ -73,7 +76,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
   void _deleteWishItem(QuerySnapshot<Object?> wishItemList, int index) {
     final wishItem = wishItemList.docs[index];
     final itemData = wishItem.data() as Map<String, dynamic>;
-    final WishItem wishItemObj = WishItem.fromMap(itemData);
+    final WishItem wishItemObj = WishItem.fromFirestore(wishItem);
     showDialog(
       context: context,
       builder: (context) {
@@ -88,7 +91,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  WishlistDao().removeItem(_currentWishList.getId()!, wishItem.id);
+                  WishlistDao().removeItem(_currentWishList.id!, wishItem.id);
                   // wishItemList.docs[index].reference.delete();
                   // _currentWishList.set(WishListFields.itemCount,wishItemList.docs.length);
                 });
@@ -125,7 +128,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentWishList.get(WishListFields.name) ?? 'Lista de Deseos'),
+        title: Text(_currentWishList.name),
         actions: [
           if (!widget.isForGifting) // Solo si es una lista propia
             IconButton(
@@ -133,7 +136,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
               onPressed: () {
                 // Lógica para compartir esta lista específica
                 ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Compartir lista "${_currentWishList.get(WishListFields.name)}"')));
+                    SnackBar(content: Text('Compartir lista "${_currentWishList.name}"')));
               },
             ),
           if (!widget.isForGifting) // Solo si es una lista propia
@@ -167,7 +170,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             return Text('Error: ${snapshot.error}');
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Text('Esta lista no tiene ítems aún.');
+            return const Center(child: Text('Esta lista no tiene deseos aún.'));
           }
 
           // Si hay datos, construye la lista de ítems
@@ -175,8 +178,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
               final itemDoc = snapshot.data!.docs[index];
-              final itemData = itemDoc.data() as Map<String, dynamic>;
-              WishItem item = WishItem.fromMap(itemData);
+              WishItem item = WishItem.fromFirestore(itemDoc);
               return WishCard(
                   wishItem: item,
                   isForGifting: widget.isForGifting,

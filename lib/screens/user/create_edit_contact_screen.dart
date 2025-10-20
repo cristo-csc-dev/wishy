@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/user_dao.dart';
 
@@ -11,15 +12,30 @@ class CreateEditContactScreen extends StatefulWidget {
 class _CreateEditContactScreenState extends State<CreateEditContactScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _messageController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUser = FirebaseAuth.instance.currentUser;
+    // Asigna el nombre de usuario actual o un alias por defecto
+    _nameController.text = currentUser?.displayName ?? '';
+
+    // Prepara el mensaje por defecto
+    final defaultName = currentUser?.displayName ?? 'un amigo';
+    _messageController.text =
+        'Hola, soy $defaultName. ¿Me agregas como wishy-contacto?';
+  }
 
   void _addContact() {
     // Aquí es donde se conectará con la base de datos o el servicio
     // para añadir el contacto. Por ahora, solo imprimimos los datos.
     final name = _nameController.text;
     final email = _emailController.text;
+    final message = _messageController.text;
     
     if (name.isNotEmpty && email.isNotEmpty) {
-      UserDao().sendContactRequest(email: email);
+      UserDao().sendContactRequest(email: email, message: message);
       print('Añadir contacto: $name, $email');
       Navigator.of(context).pop();
     } else {
@@ -47,27 +63,55 @@ class _CreateEditContactScreenState extends State<CreateEditContactScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre o alias',
-                border: OutlineInputBorder(),
+            TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Tu nombre o alias',
+                  hintText: 'Cómo te verá tu contacto',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, introduce tu nombre o alias.';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email del contacto',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, introduce el email del contacto.';
+                  }
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                    return 'Introduce un email válido.';
+                  }
+                  return null;
+                },
               ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _addContact,
-              child: const Text('Guardar Contacto'),
-            ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _messageController,
+                decoration: const InputDecoration(
+                  labelText: 'Mensaje personalizado (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3, // Define el área de texto de 3 líneas
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _addContact,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: const Text('Enviar Solicitud'),
+              ),
           ],
         ),
       ),

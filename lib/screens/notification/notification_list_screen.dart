@@ -122,7 +122,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
     switch (notification.type) {
       case NotificationType.contactRequest:
         icon = Icons.person_add;
-        subtitle = 'Tienes una nueva solicitud de contacto.';
+        subtitle = notification.message;
         showActionButtons = true;
         break;
       case NotificationType.eventInvitation:

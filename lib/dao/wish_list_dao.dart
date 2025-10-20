@@ -23,7 +23,6 @@ class WishlistDao {
     if (currentUser == null) {
       throw Exception('Usuario no autenticado.');
     }
-    //return _db.collection('wishlists').where('ownerId', isEqualTo: userId).where('sharedWithContactIds', arrayContains: currentUser.uid).snapshots();
     return _db.collection('wishlists').where(
       Filter.and(
         Filter.or(
@@ -102,7 +101,7 @@ class WishlistDao {
   Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(WishList currentWishList) {
     return FirebaseFirestore.instance
           .collection('wishlists')
-          .doc(currentWishList.getId())
+          .doc(currentWishList.id)
           .collection('items')
           .snapshots();
   }

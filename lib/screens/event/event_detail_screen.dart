@@ -102,7 +102,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     itemBuilder: (context, index) {
                       final list = availableLists[index];
                       return ListTile(
-                        title: Text(list.get( WishListFields.name) ?? '-'),
+                        title: Text(list.name ?? '-'),
                         onTap: () => Navigator.pop(context, list),
                       );
                     },
@@ -122,12 +122,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       setState(() {
         _currentEvent.userListsInEvent.update(
           currentUserId,
-          (existingLists) => existingLists..add(selectedList.getId()!),
-          ifAbsent: () => [selectedList.getId()!],
+          (existingLists) => existingLists..add(selectedList.id!),
+          ifAbsent: () => [selectedList.id!],
         );
       });
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lista "${selectedList.get(WishListFields.name)}" añadida al evento.')));
+          SnackBar(content: Text('Lista "${selectedList.name}" añadida al evento.')));
     }
   }
 
@@ -152,13 +152,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         // También simular que el deseo suelto existe en algún lugar para poder mostrarlo
         // Esto es una simplificación: en una app real, WishItem tendría un ID global
         // y se recuperaría desde el backend.
-        if (!userWishLists.any((list) => list.get(WishListFields.name) == 'Deseos Sueltos del Evento')) {
-          userWishLists.add(WishList(data: {
-            WishListFields.name.name: 'Deseos Sueltos del Evento', 
-            WishListFields.privacy.name: ListPrivacy.private, 
-            // WishListFields.items.name: []
-            })
-          );
+        if (!userWishLists.any((list) => list.name == 'Deseos Sueltos del Evento')) {
+          userWishLists.add(WishList(
+            name: 'Deseos Sueltos del Evento',
+            privacy: ListPrivacy.private, 
+            ownerId: currentUserId,
+          ));
         }
         // userWishLists.firstWhere((list) => list.get(WishListFields.name) == 'Deseos Sueltos del Evento').items.add(newWish);
       });
@@ -179,7 +178,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final Map<String, List<WishItem>> participantLooseWishes = {};
 
     _currentEvent.userListsInEvent.forEach((userId, listIds) {
-      final userAssociatedLists = userWishLists.where((list) => listIds.contains(list.getId())).toList();
+      final userAssociatedLists = userWishLists.where((list) => listIds.contains(list.id)).toList();
       participantLists[userId] = userAssociatedLists;
     });
 
@@ -317,8 +316,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                   child: ListTile(
                     leading: const Icon(Icons.list_alt),
-                    title: Text(list.get(WishListFields.name) ?? '-'),
-                    subtitle: Text('${list.get(WishListFields.itemCount)} deseos'),
+                    title: Text(list.name),
+                    subtitle: Text('${list.itemCount} deseos'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(

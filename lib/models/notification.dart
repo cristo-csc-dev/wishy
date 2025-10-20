@@ -22,10 +22,11 @@ class AppNotification {
 
   factory AppNotification.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    var type = NotificationType.fromFirestore(data['type'])!;
     return AppNotification(
       id: doc.id,
-      type: NotificationType.fromFirestore(data['type'])!,
-      title: data['title'] as String,
+      type: type,
+      title: type.title,
       message: data['message'] as String,
       senderId: data['senderId'] as String?,
       timestamp: (data['timestamp'] as Timestamp).toDate(),
