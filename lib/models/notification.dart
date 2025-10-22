@@ -9,6 +9,8 @@ class AppNotification {
   final String? senderId;
   final DateTime timestamp;
   final bool isRead;
+  final DocumentReference? contactRef;
+  DocumentSnapshot? docRef;
 
   AppNotification({
     required this.id,
@@ -18,6 +20,8 @@ class AppNotification {
     this.senderId,
     required this.timestamp,
     this.isRead = false,
+    this.contactRef,
+    this.docRef,
   });
 
   factory AppNotification.fromFirestore(DocumentSnapshot doc) {
@@ -31,6 +35,8 @@ class AppNotification {
       senderId: data['senderId'] as String?,
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       isRead: data['isRead'] as bool? ?? false,
+      contactRef: data['ref'] as DocumentReference?,
+      docRef: doc,
     );
   }
 }

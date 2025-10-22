@@ -51,13 +51,23 @@ class UserDao {
       throw Exception('No puedes agregarte a ti mismo como contacto.');
     }
 
-    // Crea un documento con los datos de la solicitud en la subcolección del destinatario
-    await _db
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('contacts')
+    DocumentSnapshot doc = await _db.collection('users')
         .doc(recipientUid)
-        .set({
+        .collection('contacts')
+        .doc(currentUser.uid)
+        .get();
+    Map<String, dynamic>? data = {};
+    if (doc.exists) {
+      data = doc.data() as Map<String, dynamic>;
+      if (data['status'] == 'pending') {
+        throw Exception('Ya has enviado una solicitud de contacto a este usuario.');
+      } else if (data['status'] == 'accepted') {
+        throw Exception('Este usuario ya es tu contacto.');
+      } else if (data['status'] == 'blocked') {
+        throw Exception('No ha sido posible añadir este contacto.');
+      }
+    } else {
+      data = {
       'userId': currentUser.uid,
       'name': currentUser.displayName,
       'message': message,
@@ -65,7 +75,16 @@ class UserDao {
       'status': 'pending',
       'requestDate': Timestamp.now(),
       'requestBy': currentUser.uid,
-    });
+    };
+    }
+
+    // Crea un documento con los datos de la solicitud en la subcolección del destinatario
+    await _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('contacts')
+        .doc(recipientUid)
+        .set(data, SetOptions(merge: true));
   }
 
   // Función para aceptar una solicitud de contacto
@@ -130,7 +149,21 @@ class UserDao {
         .doc(currentUser.uid)
         .collection('contacts')
         .doc(requestDocId)
-        .delete();
+        .set({'status': 'declined'}, SetOptions(merge: true));
+  }
+
+  // Función para rechazar una solicitud de contacto (simplemente elimina el documento)
+  Future<void> blockContact({required String requestDocId}) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      throw Exception('Usuario no autenticado.');
+    }
+    await _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('contacts')
+        .doc(requestDocId)
+        .set({'status': 'blocked'}, SetOptions(merge: true));
   }
 
   // Función para obtener los UIDs de los contactos aceptados del usuario actual
