@@ -54,10 +54,11 @@ class WishlistDao {
         final wishlistRef = _db.collection('wishlists').doc(wishlistId);
         CollectionReference itemsRef = wishlistRef.collection('items');
 
-        DocumentReference itemsRefUpdated = await itemsRef.add(itemData);
+        await itemsRef.add(itemData);
+        int itemCount = (await itemsRef.count().get()).count ?? 0;
 
         AggregateQuerySnapshot numItemsSnapshot = await _db.collection('wishlists').doc(wishlistId).collection('items').count().get();
-        transaction.update(wishlistRef, {'itemCount': (numItemsSnapshot.count??0 + 1)});
+        transaction.update(wishlistRef, {'itemCount': itemCount});
       });
     } catch (e) {
       // Devolvemos el error para que el UI pueda manejarlo

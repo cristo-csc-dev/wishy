@@ -1,3 +1,6 @@
+import 'dart:developer' as dev;
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/user_dao.dart';
@@ -27,23 +30,31 @@ class _CreateEditContactScreenState extends State<CreateEditContactScreen> {
         'Hola, soy $defaultName. ¿Me agregas como wishy-contacto?';
   }
 
-  void _addContact() {
+  void _addContact() async {
     // Aquí es donde se conectará con la base de datos o el servicio
     // para añadir el contacto. Por ahora, solo imprimimos los datos.
     final name = _nameController.text;
     final email = _emailController.text;
     final message = _messageController.text;
     
-    if (name.isNotEmpty && email.isNotEmpty) {
-      UserDao().sendContactRequest(email: email, message: message);
-      print('Añadir contacto: $name, $email');
-      Navigator.of(context).pop();
-    } else {
-      // Mostrar un mensaje de error si los campos están vacíos
+    //try {
+      if (name.isNotEmpty && email.isNotEmpty) {
+        await UserDao().sendContactRequest(email: email, message: message);
+        print('Añadir contacto: $name, $email');
+        Navigator.of(context).pop();
+      } else {
+        // Mostrar un mensaje de error si los campos están vacíos
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Por favor, rellena todos los campos.')),
+        );
+      }
+    /*} catch (e, stacktrace) {
+      // Manejar errores al enviar la solicitud de contacto
+      dev.log('Error al enviar la solicitud de contacto: $e\n$stacktrace');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, rellena todos los campos.')),
+        SnackBar(content: Text((e as Exception).toString())),
       );
-    }
+    }*/ 
   }
 
   @override

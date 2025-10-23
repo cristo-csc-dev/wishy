@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/models/notification.dart';
@@ -22,18 +24,14 @@ class NotificationDao {
             snapshot.docs.map((doc) => AppNotification.fromFirestore(doc)).toList());
   }
 
-  void getNotificationsCount(Function(QuerySnapshot) onEvent) async {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getNotificationsCount() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      return;
+      throw Exception('Usuario no autenticado.');
     }
-
     // Escucha los cambios en la subcolección de notificaciones del usuario actual.
-    _db.collection('users')
+    return _db.collection('users')
       .doc(uid)
-      .collection('notifications').snapshots().listen(
-        (event) => onEvent(event),
-        onError: (error) => print("Error al obtener el conteo de notificaciones: $error"),
-      );
+      .collection('notifications').snapshots();
   }
 }

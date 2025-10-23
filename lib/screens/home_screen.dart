@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 
@@ -37,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _sharedLink = "{}";
   static const platform = MethodChannel('com.wishysa.wishy/channel');
+  StreamSubscription? _notificationCountSubscription;
 
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -190,12 +192,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void _fetchPendingRequestsCount() {
     final user = _auth.currentUser;
     if (user != null) {
-      NotificationDao().getNotificationsCount((querySnapshot) => {
+      _notificationCountSubscription =
+      NotificationDao().getNotificationsCount().listen((QuerySnapshot snapshot) {
+        if (mounted) { // 3. Opcional, pero buena práctica: comprobar 'mounted' antes de setState
           setState(() {
-            _pendingRequestsCount = querySnapshot.docs.length;
-          }),
+            _pendingRequestsCount = snapshot.docs.length;
+          });
         }
-      );
+      }, onError: (error) {
+          // Manejo de errores
+          if (mounted) {
+              setState(() {
+                   _pendingRequestsCount = 0;
+              });
+          }
+      });
     }
   }
 
@@ -623,5 +634,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // 4. CANCELAR la suscripción para evitar el error
+    _notificationCountSubscription?.cancel(); 
+    super.dispose();
   }
 }

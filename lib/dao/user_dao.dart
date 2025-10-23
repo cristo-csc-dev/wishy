@@ -36,7 +36,7 @@ class UserDao {
     if (currentUser == null) {
       throw Exception('Usuario no autenticado.');
     }
-
+    
     // Busca al usuario destinatario por su email
     final usersSnapshot = await _db.collection('users').where('email', isEqualTo: email).limit(1).get();
 

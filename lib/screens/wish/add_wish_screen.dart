@@ -113,6 +113,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
           ownerId: user.uid,
         );
         newList.id = await wishlistDao.createWishlist(newList.data);
+        newWishlistId = newList.id;
       }
 
       // If we are editing an existing wish
@@ -126,7 +127,9 @@ class _AddWishScreenState extends State<AddWishScreen> {
         if (newWishlistId != null) {
           allListIds.add(newWishlistId);
         }
-
+        if(widget.wishList != null && widget.wishList!.id != null) {
+          allListIds.add(widget.wishList!.id!);
+        }
         for (final listId in allListIds) {
           allFutures.add(wishlistDao.addItem(listId, wishItem.toMap()));
         }

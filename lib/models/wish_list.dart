@@ -31,7 +31,13 @@ class WishList {
   String ownerId;
   List<String> sharedWithContactIds = [];
 
-  WishList({required this.name, required this.privacy, required this.ownerId, this.sharedWithContactIds = const []});
+  WishList({
+    required this.name, 
+    required this.privacy, 
+    required this.ownerId, 
+    this.sharedWithContactIds = const [], 
+    this.itemCount = 0  
+  });
 
   factory WishList.fromFirestore(DocumentSnapshot doc) {
     var result = WishList(
@@ -41,6 +47,7 @@ class WishList {
           ? List<String>.from(doc.get('sharedWithContactIds'))
           : [],
       ownerId: doc.get('ownerId'),
+      itemCount: doc.get('itemCount') ?? 0,
     );
     result.id = doc.id;
     return result;
