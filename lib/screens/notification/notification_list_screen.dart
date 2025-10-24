@@ -38,8 +38,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       // TODO: Aquí se debe implementar la lógica real,
       // por ejemplo: aceptar la solicitud de contacto
       // o unirse a un evento.
-      UserDao().acceptContact(requestDocId: notification.contactRef!.id);
-      notification.docRef!.reference.delete();
+      UserDao().acceptContact(notification: notification);
 
       print('Notificación ${notification.id} aceptada.');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,8 +65,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
     try {
       // Actualiza el documento en Firestore para marcarlo como rechazado
-      await UserDao().rejectContactRequest(user, notification);
-      notification.docRef!.reference.delete();
+      await UserDao().declineContact(notification: notification);
 
       // TODO: Aquí se debe implementar la lógica real,
       // por ejemplo: rechazar la solicitud de contacto

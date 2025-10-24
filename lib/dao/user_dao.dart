@@ -88,9 +88,11 @@ class UserDao {
   }
 
   // Función para aceptar una solicitud de contacto
-  Future<void> acceptContact({
-    required String requestDocId,
-  }) async {
+  Future<void> _responseContactRequest({
+      required String response,
+      required AppNotification notification,
+    }) async {
+    
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       throw Exception('Usuario no autenticado.');
@@ -98,72 +100,51 @@ class UserDao {
 
     // Usa una transacción para asegurar la atomicidad de las operaciones
     return _db.runTransaction((transaction) async {
-      final recipientContactRef = _db
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('contacts')
-          .doc(requestDocId);
 
-      final recipientContactDoc = await transaction.get(recipientContactRef);
+      DocumentSnapshot requestContact = await transaction.get(notification.contactRef!);
 
-      if (!recipientContactDoc.exists ||
-          recipientContactDoc.data()?['status'] != 'pending') {
+      if (!requestContact.exists ||
+          requestContact['status'] != 'pending') {
         throw Exception('La solicitud de contacto no es válida o ya ha sido procesada.');
       }
 
-      final senderUid = recipientContactDoc.data()?['userId'];
-
-      // 1. Actualiza el estado de la solicitud en el documento del receptor
-      transaction.update(recipientContactRef, {
-        'status': 'accepted',
+      await notification.contactRef!.set( {
+        'status': response,
         'acceptanceDate': Timestamp.now(),
-      });
+      }, SetOptions(merge: true));
 
       // 2. Crea el documento bidireccional en la subcolección del emisor
-      final senderContactRef = _db
-          .collection('users')
-          .doc(senderUid)
-          .collection('contacts')
-          .doc(currentUser.uid);
-
-      transaction.set(senderContactRef, {
-        'userId': currentUser.uid,
-        'name': currentUser.displayName,
-        'email': currentUser.email,
-        'status': 'accepted',
-        'requestDate': recipientContactDoc.data()?['requestDate'],
-        'acceptanceDate': Timestamp.now(),
-        'requestBy': senderUid,
-      });
+      _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('contacts')
+        .doc(notification.sender.id)
+        .set({
+          'userId': currentUser.uid,
+          'name': notification.sender.name,
+          'email': notification.sender.email,
+          'status': response,
+          'requestDate': requestContact['requestDate'],
+          'acceptanceDate': Timestamp.now(),
+          'requestBy': notification.sender.id,
+        }, SetOptions(merge: true));
+      notification.docRef!.reference.delete();
     });
   }
 
-  // Función para rechazar una solicitud de contacto (simplemente elimina el documento)
-  Future<void> declineContact({required String requestDocId}) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      throw Exception('Usuario no autenticado.');
-    }
-    await _db
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('contacts')
-        .doc(requestDocId)
-        .set({'status': 'declined'}, SetOptions(merge: true));
+  // Función para aceptar una solicitud de contacto
+  Future<void> acceptContact({required AppNotification notification}) async {
+    return _responseContactRequest(response: "accepted", notification: notification);
   }
 
-  // Función para rechazar una solicitud de contacto (simplemente elimina el documento)
-  Future<void> blockContact({required String requestDocId}) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      throw Exception('Usuario no autenticado.');
-    }
-    await _db
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('contacts')
-        .doc(requestDocId)
-        .set({'status': 'blocked'}, SetOptions(merge: true));
+  // Función para rechazar una solicitud de contacto
+  Future<void> declineContact({required AppNotification notification}) async {
+    return _responseContactRequest(response: "declined", notification: notification);
+  }
+
+  // Función para rechazar una solicitud de contacto 
+  Future<void> blockContact({required AppNotification notification}) async {
+    return _responseContactRequest(response: "blocked", notification: notification);
   }
 
   // Función para obtener los UIDs de los contactos aceptados del usuario actual
@@ -225,42 +206,5 @@ class UserDao {
       'acceptanceDate': FieldValue.serverTimestamp(),
       'status': 'accepted',
     });
-  }
-
-  Future<void> acceptRequest(User currentUser, ContactRequest request) async {
-    final senderContactRef = _db
-        .collection('users')
-        .doc(request.senderId)
-        .collection('contacts')
-        .doc(currentUser.uid);
-        
-    final Map<String, dynamic> currentUserData = {
-      'senderId': currentUser.uid,
-      'email': currentUser.email,
-      'name': currentUser.displayName ?? 'Anónimo',
-      'requestDate': FieldValue.serverTimestamp(),
-      'acceptanceDate': FieldValue.serverTimestamp(),
-      'status': 'accepted',
-    };
-    
-    await senderContactRef.set(currentUserData);
-  }
-
-  Future<void> rejectContactRequest(User user, AppNotification notification) async {
-    await _db
-        .collection('users')
-        .doc(user.uid)
-        .collection('notifications')
-        .doc(notification.id)
-        .update({'status': 'rejected', 'isRead': true});
-  }
-
-  Future<void> declineRequest(User currentUser, String requestId) async {
-    await _db
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('contacts')
-        .doc(requestId)
-        .delete();
   }
 }

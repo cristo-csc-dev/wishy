@@ -135,15 +135,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
               const SizedBox(height: 20),
               // Campo para la URL de la foto
-              TextFormField(
-                controller: _photoUrlController,
-                decoration: InputDecoration(
-                  labelText: 'URL de la foto de perfil (opcional)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+              // TextFormField(
+              //   controller: _photoUrlController,
+              //   decoration: InputDecoration(
+              //     labelText: 'URL de la foto de perfil (opcional)',
+              //     border: OutlineInputBorder(
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //   ),
+              // ),
               const SizedBox(height: 20),
               // Botón de guardar
               SizedBox(

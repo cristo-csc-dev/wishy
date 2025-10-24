@@ -56,6 +56,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
               : [],
           'ownerId': user.uid,
           'createdAt': FieldValue.serverTimestamp(),
+          'itemCount': widget.wishList?.itemCount ?? 0,
         });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -111,6 +111,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
           name: newListName,
           privacy: ListPrivacy.private,
           ownerId: user.uid,
+          itemCount: 0,
         );
         newList.id = await wishlistDao.createWishlist(newList.data);
         newWishlistId = newList.id;
