@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/models/wish_list.dart';
 
 class WishlistDao {
@@ -24,7 +25,7 @@ class WishlistDao {
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getSharedWishlistsStreamSnapshot(String userId) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     return _db
@@ -34,7 +35,7 @@ class WishlistDao {
       .where(
         Filter.and(
           Filter.or(
-            Filter('sharedWithContactIds', arrayContains: currentUser.uid),
+            Filter('sharedWithContactIds', arrayContains: UserAuth.getCurrentUser().uid),
             Filter('privacy', isEqualTo: 'public')
           ), 
           Filter('ownerId', isEqualTo: userId)
@@ -51,13 +52,13 @@ class WishlistDao {
 
   Future<String> createWishlist(Map<String, dynamic> wishlistData) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     try {
       DocumentReference newWishList = await _db
         .collection('users')
-        .doc(currentUser.uid)
+        .doc(UserAuth.getCurrentUser().uid)
         .collection('wishlists')
         .add(wishlistData);
       return newWishList.id;
@@ -70,13 +71,13 @@ class WishlistDao {
   Future<void> addItem(String wishlistId, Map<String, dynamic> itemData) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
+      if (!UserAuth.isUserAuthenticatedAndVerified()) {
         throw Exception('Usuario no autenticado.');
       }
       await _db.runTransaction((transaction) async {
         final wishlistRef = _db
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(UserAuth.getCurrentUser().uid)
           .collection('wishlists').doc(wishlistId);
         CollectionReference itemsRef = wishlistRef.collection('items');
 
@@ -93,13 +94,13 @@ class WishlistDao {
 
   Future<void> updateItem(String wishlistId, String itemId,  Map<String, dynamic> itemData) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     try {
       await _db
         .collection('users')
-        .doc(currentUser.uid)
+        .doc(UserAuth.getCurrentUser().uid)
         .collection('wishlists')
         .doc(wishlistId)
         .collection('items')
@@ -113,7 +114,7 @@ class WishlistDao {
 
   Future<void> removeItem(String wishlistId, String itemId) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     try {
@@ -137,7 +138,7 @@ class WishlistDao {
 
   void createOrUpdateWishlist(String id, Map<String, Object> map) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     _db
@@ -150,7 +151,7 @@ class WishlistDao {
 
   void deleteWishlist(String id) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     _db
@@ -163,7 +164,7 @@ class WishlistDao {
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(WishList currentWishList) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     return _db

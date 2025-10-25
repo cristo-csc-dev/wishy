@@ -113,7 +113,7 @@ class _AddWishToListsScreenState extends State<AddWishToListsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
-    if (user == null) {
+    if (user == null || !user.emailVerified) {
       return const Center(child: Text('Inicia sesión para ver tus listas.'));
     }
     return Scaffold(

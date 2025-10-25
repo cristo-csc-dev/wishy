@@ -121,7 +121,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   void _saveEvent() {
 
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (currentUser == null || !currentUser.emailVerified) {
       throw Exception('Usuario no autenticado.');
     }
     var userId = currentUser.uid;

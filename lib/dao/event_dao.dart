@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/auth/user_auth.dart';
 
 class EventDao {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -12,9 +13,8 @@ class EventDao {
 
   // Obtiene el stream de datos del usuario actual
   Stream<DocumentSnapshot> getCurrentUserStream() {
-    final user = _auth.currentUser;
-    if (user != null) {
-      return _db.collection('users').doc(user.uid).snapshots();
+    if (UserAuth.isUserAuthenticatedAndVerified()) {
+      return _db.collection('users').doc(UserAuth.getCurrentUser().uid).snapshots();
     } else {
       throw Exception('No user is currently signed in.');
     }
@@ -26,7 +26,7 @@ class EventDao {
 
   Stream<QuerySnapshot> getEventsSharedWithMe() {
     final user = _auth.currentUser;
-    if (user != null) {
+    if (user != null && user.emailVerified) {
       return _db.collection('events').where(
         Filter.or(Filter('invitedUserIds', arrayContains: user.uid), Filter('ownerId', isEqualTo: user.uid))
       ).snapshots();

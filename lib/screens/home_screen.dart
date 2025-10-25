@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
@@ -190,8 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _fetchPendingRequestsCount() {
-    final user = _auth.currentUser;
-    if (user != null) {
+    if (UserAuth.isUserAuthenticatedAndVerified()) {
       _notificationCountSubscription =
       NotificationDao().getNotificationsCount().listen((QuerySnapshot snapshot) {
         if (mounted) { // 3. Opcional, pero buena práctica: comprobar 'mounted' antes de setState
@@ -272,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- VISTA DE MIS LISTAS ---
   Widget _buildMyListsView() {
     final user = _auth.currentUser;
-    if (user == null) {
+    if (user == null || !user.emailVerified) {
       return const Center(child: Text('Inicia sesión para ver tus listas.'));
     }
 

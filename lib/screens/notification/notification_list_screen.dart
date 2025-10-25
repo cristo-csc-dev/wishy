@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/notification.dart';
@@ -24,8 +25,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
   // Lógica para aceptar una notificación
   Future<void> _handleAccept(AppNotification notification) async {
-    final user = _auth.currentUser;
-    if (user == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: Usuario no autenticado.')),
       );
@@ -55,8 +55,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
   // Lógica para rechazar una notificación
   Future<void> _handleReject(AppNotification notification) async {
-    final user = _auth.currentUser;
-    if (user == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: Usuario no autenticado.')),
       );

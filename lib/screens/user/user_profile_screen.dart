@@ -71,7 +71,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
-    if (user == null) {
+    if (user == null || !user.emailVerified) {
       return const Center(child: CircularProgressIndicator());
     }
 

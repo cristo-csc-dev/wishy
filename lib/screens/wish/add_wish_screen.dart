@@ -89,7 +89,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
     }
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null || !user.emailVerified) return;
 
     final wishItem = WishItem(
       id: widget.wishItem?.id ?? const Uuid().v4(),

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/contact_request.dart';
 import 'package:wishy/models/notification.dart';
@@ -33,7 +34,7 @@ class UserDao {
     required String? message,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     
@@ -47,14 +48,14 @@ class UserDao {
     final recipientDoc = usersSnapshot.docs.first;
     final recipientUid = recipientDoc.id;
 
-    if (recipientUid == currentUser.uid) {
+    if (recipientUid == UserAuth.getCurrentUser().uid) {
       throw Exception('No puedes agregarte a ti mismo como contacto.');
     }
 
     DocumentSnapshot doc = await _db.collection('users')
         .doc(recipientUid)
         .collection('contacts')
-        .doc(currentUser.uid)
+        .doc(UserAuth.getCurrentUser().uid)
         .get();
     Map<String, dynamic>? data = {};
     if (doc.exists) {
@@ -68,20 +69,20 @@ class UserDao {
       }
     } else {
       data = {
-      'userId': currentUser.uid,
-      'name': currentUser.displayName,
+      'userId': UserAuth.getCurrentUser().uid,
+      'name': UserAuth.getCurrentUser().displayName,
       'message': message,
-      'email': currentUser.email,
+      'email': UserAuth.getCurrentUser().email,
       'status': 'pending',
       'requestDate': Timestamp.now(),
-      'requestBy': currentUser.uid,
+      'requestBy': UserAuth.getCurrentUser().uid,
     };
     }
 
     // Crea un documento con los datos de la solicitud en la subcolección del destinatario
     await _db
         .collection('users')
-        .doc(currentUser.uid)
+        .doc(UserAuth.getCurrentUser().uid)
         .collection('contacts')
         .doc(recipientUid)
         .set(data, SetOptions(merge: true));
@@ -93,8 +94,7 @@ class UserDao {
       required AppNotification notification,
     }) async {
     
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
 
@@ -116,11 +116,11 @@ class UserDao {
       // 2. Crea el documento bidireccional en la subcolección del emisor
       _db
         .collection('users')
-        .doc(currentUser.uid)
+        .doc(UserAuth.getCurrentUser().uid)
         .collection('contacts')
         .doc(notification.sender.id)
         .set({
-          'userId': currentUser.uid,
+          'userId': UserAuth.getCurrentUser().uid,
           'name': notification.sender.name,
           'email': notification.sender.email,
           'status': response,
@@ -150,7 +150,7 @@ class UserDao {
   // Función para obtener los UIDs de los contactos aceptados del usuario actual
   Future<List<Contact>> getAcceptedContacts() async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
       return [];
     }
 
@@ -166,14 +166,14 @@ class UserDao {
 
   Stream<QuerySnapshot> getAcceptedContactsStream() {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       // Retorna un stream vacío si no hay usuario
       return Stream.empty();
     }
 
     return _db
         .collection('users')
-        .doc(currentUser.uid)
+        .doc(UserAuth.getCurrentUser().uid)
         .collection('contacts')
         .where('status', isEqualTo: 'accepted')
         .snapshots();
@@ -182,14 +182,14 @@ class UserDao {
   // Función para recuperar las solicitudes de contacto pendientes para el usuario actual
   Stream<QuerySnapshot> getPendingRequests() {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       // Retorna un stream vacío si no hay usuario
       return Stream.empty();
     }
 
     return _db
         .collection('users')
-        .doc(currentUser.uid)
+        .doc(UserAuth.getCurrentUser().uid)
         .collection('contacts')
         .where('status', isEqualTo: 'pending')
         .snapshots();

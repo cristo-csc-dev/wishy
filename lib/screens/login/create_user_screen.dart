@@ -35,13 +35,16 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     }
 
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      _auth.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
-      );
-
-      await UserDao().createUser(userCredential.user!.uid, _emailController.text, '');
-      
+      ).then((userCredential)  {
+        if(!String.fromEnvironment('DEV').toLowerCase().contains('true')) {
+          // Crear el usuario en Firestore
+          userCredential.user!.sendEmailVerification();
+        }
+        UserDao().createUser(userCredential.user!.uid, _emailController.text, '');
+      });
       // Al registrar, navega automáticamente a la pantalla principal
       // debido al StreamBuilder en main.dart. Cierra la pantalla de registro.
       Navigator.of(context).pop();

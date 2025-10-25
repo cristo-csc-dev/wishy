@@ -45,7 +45,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
 
       try {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
+        if (user == null || !user.emailVerified) {
           throw Exception('Usuario no autenticado');
         }
         WishlistDao().createOrUpdateWishlist(id, {

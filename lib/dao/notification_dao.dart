@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/models/notification.dart';
 
 class NotificationDao {
@@ -26,7 +27,7 @@ class NotificationDao {
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getNotificationsCount() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     // Escucha los cambios en la subcolección de notificaciones del usuario actual.
