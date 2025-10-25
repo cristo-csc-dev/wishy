@@ -1,6 +1,5 @@
 package com.wishy.wishy
 
-import android.net.Uri
 import android.content.Intent
 import android.os.Bundle
 import io.flutter.Log
