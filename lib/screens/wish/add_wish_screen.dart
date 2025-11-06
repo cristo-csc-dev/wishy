@@ -158,9 +158,9 @@ class _AddWishScreenState extends State<AddWishScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final _auth = FirebaseAuth.instance;
+    final auth = FirebaseAuth.instance;
     final wishlistsStreamSnapshot =
-        WishlistDao().getWishlistsStreamSnapshot(_auth.currentUser!.uid);
+        WishlistDao().getWishlistsStreamSnapshot(auth.currentUser!.uid);
 
     return Scaffold(
       appBar: AppBar(
@@ -317,7 +317,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
                                     _toggleWishlistSelection(wishlist.id!),
                                 activeColor: Colors.indigo,
                               );
-                            }).toList(),
+                            }),
                             const SizedBox(height: 16),
                             const Divider(),
                             const SizedBox(height: 16),

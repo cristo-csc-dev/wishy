@@ -35,7 +35,7 @@ class Event {
     this.userLooseWishesInEvent = const {},
   });
 
-  static fromMap(String id, Map<String, dynamic> map) {
+  static Event fromMap(String id, Map<String, dynamic> map) {
     return Event(
       id: id,
       name: map['name'] as String,
@@ -57,7 +57,7 @@ class Event {
     );
   }
 
-  static fromFirestore(String id, DocumentSnapshot event) {
+  static Event fromFirestore(String id, DocumentSnapshot event) {
     return Event(
       id: id,
       name: event['name'] as String,

@@ -8,10 +8,7 @@ class UserAuth {
 
   static bool isUserAuthenticatedAndVerified() {
     if(_getInstance().currentUser != null) {
-      if(!(String.fromEnvironment('FLUTTER_ENV') == 'development')) {
-        return _getInstance().currentUser!.emailVerified;
-      }
-      return true;
+      return _getInstance().currentUser!.emailVerified;
     }
     return false;
   }
@@ -27,4 +24,7 @@ class UserAuth {
     return FirebaseAuth.instance;
   }
 
+  static void sendEmailVerification(UserCredential userCredential) {
+    userCredential.user!.sendEmailVerification();
+  }
 }

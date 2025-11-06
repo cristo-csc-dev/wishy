@@ -22,7 +22,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   ListPrivacy _selectedPrivacy = ListPrivacy.private;
   List<String> _selectedContactIds = [];
   DateTime? _selectedEventDate;
-  bool _allowMarkingAsBought = true;
+  final bool _allowMarkingAsBought = true;
   List<Contact> _contacts = [];
 
   @override

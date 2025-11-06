@@ -18,6 +18,7 @@ class UserDao {
     await _db.collection('users').doc(userId).set({
       'email': email,
       'name': name,
+      'email_lowercase': email.toLowerCase(),
       'createdAt': Timestamp.now(),
       'appId': _appId,
     });
@@ -33,13 +34,16 @@ class UserDao {
     required String email,
     required String? message,
   }) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
     if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     
     // Busca al usuario destinatario por su email
-    final usersSnapshot = await _db.collection('users').where('email', isEqualTo: email).limit(1).get();
+    final usersSnapshot = await _db
+      .collection('users')
+      .where('email_lowercase', isEqualTo: email.toLowerCase())
+      .limit(1)
+      .get();
 
     if (usersSnapshot.docs.isEmpty) {
       throw Exception('No se encontró un usuario con ese email.');

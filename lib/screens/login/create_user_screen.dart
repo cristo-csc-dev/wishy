@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
+import 'package:wishy/screens/login/email_verification_screen.dart';
+import 'package:wishy/utils/message_utils.dart';
 
 class CreateUserScreen extends StatefulWidget {
   const CreateUserScreen({super.key});
@@ -34,20 +37,25 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
       return;
     }
 
+    String message = '';
     try {
-      _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
-      ).then((userCredential)  {
-        if(!String.fromEnvironment('DEV').toLowerCase().contains('true')) {
-          // Crear el usuario en Firestore
-          userCredential.user!.sendEmailVerification();
-        }
-        UserDao().createUser(userCredential.user!.uid, _emailController.text, '');
-      });
+      );
+
+      UserAuth.sendEmailVerification(userCredential);
+      UserDao().createUser(userCredential.user!.uid, _emailController.text, '');
+      FirebaseAuth.instance.signOut();
+      
       // Al registrar, navega automáticamente a la pantalla principal
       // debido al StreamBuilder en main.dart. Cierra la pantalla de registro.
-      Navigator.of(context).pop();
+      if(mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const EmailVerificationScreen()),
+          (Route<dynamic> route) => false,
+        );
+      }
     } on FirebaseAuthException catch (e) {
       String message;
       if (e.code == 'weak-password') {

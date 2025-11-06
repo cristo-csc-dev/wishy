@@ -22,7 +22,6 @@ import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/user/friend_list_overview_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
-import 'package:wishy/screens/sharing/add_wish_to_lists_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
 import 'package:wishy/models/event.dart'; // ¡NUEVO!
 import 'package:wishy/screens/event/create_edit_event_screen.dart'; // ¡NUEVO!

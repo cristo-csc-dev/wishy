@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
+import 'package:wishy/utils/message_utils.dart';
 import 'create_user_screen.dart'; // Importa la nueva pantalla de creación
 
 class LoginScreen extends StatefulWidget {
@@ -120,16 +121,25 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             TextButton(
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CreateUserScreen(),
-                  ),
-                );
+                _showCreateUserScreen(context);
               },
               child: const Text('¿No tienes una cuenta? Crea una aquí'),
             ),
+            if (MessageUtils.hasMessage()) ...[Text(
+              MessageUtils.getMessage(),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),]
           ],
         ),
+      ),
+    );
+  }
+
+  void _showCreateUserScreen(BuildContext context) async {
+    Navigator.push(context,
+      MaterialPageRoute(
+        builder: (context) => const CreateUserScreen(),
       ),
     );
   }
