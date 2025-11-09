@@ -73,14 +73,14 @@ class UserDao {
       }
     } else {
       data = {
-      'userId': UserAuth.getCurrentUser().uid,
-      'name': UserAuth.getCurrentUser().displayName,
-      'message': message,
-      'email': UserAuth.getCurrentUser().email,
-      'status': 'pending',
-      'requestDate': Timestamp.now(),
-      'requestBy': UserAuth.getCurrentUser().uid,
-    };
+        'userId': UserAuth.getCurrentUser().uid,
+        'name': UserAuth.getCurrentUser().displayName,
+        'message': message,
+        'email': UserAuth.getCurrentUser().email,
+        'status': 'pending',
+        'requestDate': Timestamp.now(),
+        'requestBy': UserAuth.getCurrentUser().uid,
+      };
     }
 
     // Crea un documento con los datos de la solicitud en la subcolección del destinatario
@@ -169,7 +169,6 @@ class UserDao {
   }
 
   Stream<QuerySnapshot> getAcceptedContactsStream() {
-    final currentUser = FirebaseAuth.instance.currentUser;
     if (!UserAuth.isUserAuthenticatedAndVerified()) {
       // Retorna un stream vacío si no hay usuario
       return Stream.empty();
@@ -185,7 +184,6 @@ class UserDao {
 
   // Función para recuperar las solicitudes de contacto pendientes para el usuario actual
   Stream<QuerySnapshot> getPendingRequests() {
-    final currentUser = FirebaseAuth.instance.currentUser;
     if (!UserAuth.isUserAuthenticatedAndVerified()) {
       // Retorna un stream vacío si no hay usuario
       return Stream.empty();

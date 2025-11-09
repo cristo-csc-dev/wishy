@@ -56,7 +56,13 @@ exports.actualizarColeccion = functions.firestore
 
       logger.debug("Context.params:", context.params);
 
-      db.collection("users")
+      const status = snapshot.data() && snapshot.data().status;
+      if (status !== "pending") {
+        logger.log("El estado no es 'pending', no se crea notificación.");
+        return null;
+      }
+
+      return db.collection("users")
           .doc(context.params.contactId)
           .collection("notifications").add({
             type: "contactRequest",
@@ -72,7 +78,6 @@ exports.actualizarColeccion = functions.firestore
             read: false,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
             // Puedes agregar más campos según sea necesario
-          },
-          );
+          });
     },
     );
