@@ -12,6 +12,7 @@ import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
+import 'package:wishy/intent/android_intent.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
@@ -560,11 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _sharedLink = call.arguments;
       final Map<String, dynamic> jsonData = jsonDecode(_sharedLink);
       dev.log("Received shared text: $jsonData");
-      WishItem wishDataItem = WishItem(
-        id: const Uuid().v4(),
-        name: jsonData['title'] ?? '',
-        productUrl:  jsonData['link'] ?? '',
-      );
+      WishItem wishDataItem = getWishItemFromMap(jsonData)!;
 
       // Navegamos usando el contexto válido obtenido del GlobalKey
       Navigator.of(context).push(

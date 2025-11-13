@@ -2,6 +2,7 @@ package com.wishy.wishy
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.result.IntentSenderRequest
 import io.flutter.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodChannel
@@ -33,37 +34,62 @@ class MainActivity : FlutterActivity() {
         handleIntent(intent)
     }
 
-    private fun handleIntent(intent: Intent) {
+    private fun handleIntent(intentParam: Intent) {
+        getIntentExtras(intentParam)
+        printIntentStack(intentParam)
         // Verificar si el Intent contiene datos
-        if ((intent?.action == Intent.ACTION_VIEW || intent.action ==Intent.ACTION_SEND) && intent.type != null) {
+        if ((intentParam?.action == Intent.ACTION_VIEW || intentParam.action ==Intent.ACTION_SEND) && intentParam.type != null) {
             when {
-                intent.type?.contains("x-vcard") == true -> {
+                intentParam.type?.contains("x-vcard") == true -> {
                     // Si el Intent es de tipo vCard, procesar el archivo
-                    handleVCardIntent(intent)
+                    handleVCardIntent(intentParam)
                 }
                 else -> {
-                    handleExternalLink(intent)
+                    handleExternalLink(intentParam)
                 }
             }
         }
     }
 
-    private fun handleExternalLink(intent: Intent) {
-        val sharedLinkInfo: MutableMap<String, String> = HashMap()
-        sharedLinkInfo.put("link", intent.getStringExtra(Intent.EXTRA_TEXT) ?: "")
-        sharedLinkInfo.put("title", intent.getStringExtra(Intent.EXTRA_TITLE) ?: "")
-        sharedLinkInfo.put("subject", intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: "")
-
+    private fun handleExternalLink(intentParam: Intent) {
+        val intentExtraContent = getIntentExtras(intentParam)
+        Log.d("intentExtraContent: ", intentExtraContent.toString())
+        val intentAsJson = JSONObject(intentExtraContent).toString()
+        Log.d("intentAsJson: ", intentAsJson)
         flutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
             {}
             MethodChannel(messenger, CHANNEL).invokeMethod(
                 "onSharedText",
-                (sharedLinkInfo as Map<*, *>?)?.let { JSONObject(it).toString() }
+                intentAsJson
             )
         }
     }
 
     private fun handleVCardIntent(intent: Intent) {
+        getIntentExtras(intent)
+
+    }
+
+    private fun getIntentExtras(intentParam: Intent):Map<String, Any?> {
+        val extras: Bundle? = intent.extras // 1. Obtener el Bundle de extras
+        val result: HashMap<String, Any?> = HashMap<String, Any?>()
+        if (extras != null) {
+            val tag = "INTENT_EXTRAS" // Etiqueta para filtrar fácilmente
+            Log.d(tag, "--- INICIO DE EXTRAS ---")
+            for (key in extras.keySet()) {
+                val value = extras.get(key) // Obtener el valor asociado a la clave
+                Log.d(tag, String.format("Clave: %s | Valor: %s | Tipo: %s",
+                    key, value.toString(), value?.javaClass?.simpleName))
+                result[key] = value.toString().replace("\n", " ").trim()
+            }
+            Log.d(tag, "--- FIN DE EXTRAS ---")
+        } else {
+            Log.d("INTENT_EXTRAS", "No se encontraron extras en el Intent.")
+        }
+        return result
+    }
+
+    fun printIntentStack(intentParm: Intent) {
         val clipDataItem = intent.clipData?.getItemAt(0)
         val vcardUri = clipDataItem?.uri
         if (vcardUri != null) {
@@ -80,6 +106,10 @@ class MainActivity : FlutterActivity() {
                     }
                     reader.close()
                     inputStream.close()
+                    val tag = "INTENT_URI" // Etiqueta para filtrar fácilmente
+                    Log.d(tag, "--- INICIO DE URI ---")
+                    Log.d("vcard", vcardContent.toString());
+                    Log.d(tag, "--- FIN DE URI ---")
                     // Ahora puedes usar 'vcardContent' para extraer la información del contacto
                     // ...
                 }
