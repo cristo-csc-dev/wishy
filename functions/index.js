@@ -39,45 +39,91 @@ setGlobalOptions({
 //   response.send("Hello from Firebase!");
 // });
 
-exports.actualizarColeccion = functions.firestore
-    .document("users/{userId}/contacts/{contactId}")
-    .onCreate((snapshot, context) => {
-      logger.log("Se ha creado un nuevo contacto");
-      // La función se ejecuta cuando un documento se actualiza
-      // 'change' contiene el estado del documento 'antes' y
-      // 'después' de la actualización
-      // const newValue = change.after.data();
-      // const previousValue = change.before.data();
+exports.onNewContactRequest = functions.firestore
+    .document("users/{recipientUserId}/contactRequests/{senderUserId}")
+    .onCreate(async (snap, context) => {
+      const requestData = snap.data();
+      const {recipientUserId, senderUserId, senderName} = requestData;
 
-      // Lógica para actualizar la otra colección
-      // Aquí puedes usar el SDK de Admin de Firestore
+      // Estructura de la notificación para el usuario receptor.
+      const newNotification = {
+        type: "contactRequest",
+        title: "Nueva solicitud de contacto",
+        message: `${senderName} quiere añadirte a sus contactos.`,
+        senderId: senderUserId,
+        status: "pending",
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        isRead: false,
+      };
 
-      const db = admin.firestore();
+      const notificationRef = admin.firestore()
+          .collection(`users/${recipientUserId}/notifications`);
 
-      logger.debug("Context.params:", context.params);
+      await notificationRef.add(newNotification);
 
-      const status = snapshot.data() && snapshot.data().status;
-      if (status !== "pending") {
-        logger.log("El estado no es 'pending', no se crea notificación.");
+      logger.info(
+          `Notificación creada para ${recipientUserId} por ${senderUserId}`,
+      );
+    });
+
+exports.onContactRequestStatusUpdate = functions.firestore
+    // Se dispara cada vez que un documento en 'notifications' es actualizado.
+    .document("users/{userId}/notifications/{notificationId}")
+    .onUpdate(async (change, context) => {
+      const before = change.before.data();
+      const after = change.after.data();
+
+      if (after.type !== "contactRequest" || before.status === after.status) {
         return null;
       }
 
-      return db.collection("users")
-          .doc(context.params.contactId)
-          .collection("notifications").add({
-            type: "contactRequest",
-            receiver: context.params.contactId,
-            sender: {
-              uid: context.params.userId,
-              name: snapshot.data().name,
-              email: snapshot.data().email,
-            },
-            message: snapshot.data().message || "",
-            // Puedes agregar más campos según sea necesario
-            ref: snapshot.ref,
-            read: false,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
-            // Puedes agregar más campos según sea necesario
-          });
-    },
-    );
+      const recipientId = context.params.userId;
+      const senderId = after.senderId;
+      const newStatus = after.status;
+
+      if (!senderId) {
+        logger.error(
+            `ERROR: Notificación ${context.params.notificationId} 
+            no tiene senderId.`,
+        );
+        return null;
+      }
+
+      const recipientContactRef = admin
+          .firestore()
+          .doc(`users/${recipientId}/contacts/${senderId}`);
+      const senderContactRef = admin
+          .firestore()
+          .doc(`users/${senderId}/contacts/${recipientId}`);
+      if (newStatus === "accepted") {
+        const contactData = {
+          addedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        await Promise.all([
+          recipientContactRef.set(contactData),
+          senderContactRef.set(contactData),
+        ]);
+
+        logger
+            .info(`Contactos creados (bidireccional) entre ${recipientId} y 
+              ${senderId}`, {
+              recipient: recipientId,
+              sender: senderId,
+              status: newStatus,
+            });
+      } else if (newStatus === "rejected") {
+        await Promise.all([
+          recipientContactRef.delete().catch((e) => {}),
+          senderContactRef.delete().catch((e) => {})
+        ]);
+
+        logger.info(`Contactos eliminados/descartados entre 
+          ${recipientId} y ${senderId}`, {
+          recipient: recipientId,
+          sender: senderId,
+          status: newStatus,
+        });
+      }
+      return null;
+    });
