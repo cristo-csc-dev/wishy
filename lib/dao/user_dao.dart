@@ -24,6 +24,18 @@ class UserDao {
     });
   }
 
+  Future<void> updateCurrentUserName(String name) async {
+    try {
+      await _db
+        .collection('users')
+        .doc(UserAuth.getCurrentUser().uid)
+        .set({"name": name}, SetOptions(merge: true));
+    } catch (e) {
+      // Devolvemos el error para que el UI pueda manejarlo
+      throw Exception('Error al actualizar el usuario: $e');
+    }
+  }
+
   Future<DocumentSnapshot?> getUserById(String userId) async {
     final doc = await _db.collection('users').doc(userId).get();
     return doc.exists ? doc : null;

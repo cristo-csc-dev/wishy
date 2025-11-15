@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/dao/user_dao.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -44,6 +45,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (user != null) {
         try {
           await user.updateDisplayName(_displayNameController.text.trim());
+          await UserDao().updateCurrentUserName(_displayNameController.text.trim());
           // await user.updateEmail(_displayEmailController.text.trim());
           await user.updatePhotoURL(_photoUrlController.text.trim());
 
