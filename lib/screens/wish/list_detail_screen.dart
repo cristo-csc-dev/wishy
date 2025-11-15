@@ -24,8 +24,6 @@ class ListDetailScreen extends StatefulWidget {
 
 class _ListDetailScreenState extends State<ListDetailScreen> {
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
   late WishList _currentWishList; // Para poder modificarla
 
   @override
@@ -130,15 +128,15 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       appBar: AppBar(
         title: Text(_currentWishList.name),
         actions: [
-          if (!widget.isForGifting) // Solo si es una lista propia
-            IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () {
-                // Lógica para compartir esta lista específica
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Compartir lista "${_currentWishList.name}"')));
-              },
-            ),
+          // if (!widget.isForGifting) // Solo si es una lista propia
+          //   IconButton(
+          //     icon: const Icon(Icons.share),
+          //     onPressed: () {
+          //       // Lógica para compartir esta lista específica
+          //       ScaffoldMessenger.of(context).showSnackBar(
+          //           SnackBar(content: Text('Compartir lista "${_currentWishList.name}"')));
+          //     },
+          //   ),
           if (!widget.isForGifting) // Solo si es una lista propia
             IconButton(
               icon: const Icon(Icons.edit),
@@ -181,6 +179,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
               WishItem item = WishItem.fromFirestore(itemDoc);
               return WishCard(
                   wishItem: item,
+                  wishList: _currentWishList,
                   isForGifting: widget.isForGifting,
                   // onMarkAsBought: widget.isForGifting && _currentWishList.get(WishListFields.allowMarkingAsBought)
                   //     ? () => _markWishAsBought(item)

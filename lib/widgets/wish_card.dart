@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/wish/wish_detail_screen.dart';
 
 class WishCard extends StatelessWidget {
   final WishItem wishItem;
+  final WishList wishList;
   final bool isForGifting; // Si esta tarjeta es para el regalador
   final VoidCallback? onMarkAsBought; // Solo si isForGifting es true
   final VoidCallback? onEdit; // Solo si no es forGifting
@@ -13,6 +15,7 @@ class WishCard extends StatelessWidget {
   const WishCard({
     super.key,
     required this.wishItem,
+    required this.wishList,
     this.isForGifting = false,
     this.onMarkAsBought,
     this.onEdit,
@@ -30,7 +33,7 @@ class WishCard extends StatelessWidget {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => WishDetailScreen(wishItem: wishItem),
+              builder: (context) => WishDetailScreen(wishItem: wishItem, wishList: wishList,),
             ),
           );
           // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
