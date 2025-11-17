@@ -53,6 +53,7 @@ class FriendListsOverviewScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ListDetailScreen(
+                        userId: contact.id,
                         wishList: list,
                         isForGifting: true, // ¡Importante! Indica que es para regalar
                       ),

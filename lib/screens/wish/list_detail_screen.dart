@@ -9,11 +9,13 @@ import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/widgets/wish_card.dart';
 
 class ListDetailScreen extends StatefulWidget {
+  final String userId;
   final WishList wishList;
   final bool isForGifting; // True si es una lista de otro para regalar
 
   const ListDetailScreen({
     super.key,
+    required this.userId,
     required this.wishList,
     this.isForGifting = false,
   });
@@ -159,7 +161,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: WishlistDao().getListItems(_currentWishList),
+        stream: WishlistDao().getListItems(widget.userId, _currentWishList),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();

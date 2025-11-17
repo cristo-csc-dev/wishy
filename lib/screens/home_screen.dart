@@ -17,7 +17,8 @@ import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
-import 'package:wishy/screens/user/create_edit_contact_screen.dart';
+import 'package:wishy/screens/user/contact_list_screen.dart';
+import 'package:wishy/screens/user/create_edit_contact_request_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/user/friend_list_overview_screen.dart';
@@ -162,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
           } else if (_selectedIndex == 1) {
             final result = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const CreateEditContactScreen()),
+              MaterialPageRoute(builder: (context) => const CreateEditContactRequestScreen()),
             );
             if (result != null && result is WishList) {
               setState(() {
@@ -304,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ListDetailScreen(wishList: list),
+                    builder: (context) => ListDetailScreen(userId: UserAuth.getCurrentUser().uid,wishList: list),
                   ),
                 );
                 // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
@@ -602,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.edit, color: Colors.indigo),
-            title: const Text('Editar Perfil'),
+            title: const Text('Perfil'),
             onTap: () {
               // Cierra el drawer
               Navigator.pop(context);
@@ -617,8 +618,24 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.people, color: Colors.indigo),
+            title: const Text('Contactos'),
+            onTap: () {
+              // Cierra el drawer
+              Navigator.pop(context);
+              // Navega a la pantalla de perfil
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ContactsListScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Cerrar Sesión'),
+            title: const Text('Salir'),
             onTap: () {
               // Cierra el drawer
               Navigator.pop(context);

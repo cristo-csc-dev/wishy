@@ -86,9 +86,9 @@ class UserDao {
     } else {
       data = {
         'userId': UserAuth.getCurrentUser().uid,
-        'name': UserAuth.getCurrentUser().displayName,
+        'name': recipientDoc['name'],
         'message': message,
-        'email': UserAuth.getCurrentUser().email,
+        'email': recipientDoc['email'],
         'status': 'pending',
         'requestDate': Timestamp.now(),
         'requestBy': UserAuth.getCurrentUser().uid,
@@ -175,6 +175,8 @@ class UserDao {
         .doc(currentUser.uid)
         .collection('contacts')
         .where('status', isEqualTo: 'accepted')
+        .orderBy('name')
+        .orderBy('email')
         .get();
 
     return contactsSnapshot.docs.map((doc) => Contact.fromFirestore(doc)).toList();
@@ -191,6 +193,8 @@ class UserDao {
         .doc(UserAuth.getCurrentUser().uid)
         .collection('contacts')
         .where('status', isEqualTo: 'accepted')
+        .orderBy('name')
+        .orderBy('email')
         .snapshots();
   }
 

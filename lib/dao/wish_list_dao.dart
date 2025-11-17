@@ -162,14 +162,14 @@ class WishlistDao {
       .delete();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(WishList currentWishList) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(String userId, WishList currentWishList) {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     return _db
       .collection('users')
-      .doc(currentUser.uid)
+      .doc(userId)
       .collection('wishlists')
       .doc(currentWishList.id)
       .collection('items')

@@ -3,14 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/user_dao.dart';
 
-class CreateEditContactScreen extends StatefulWidget {
-  const CreateEditContactScreen({super.key});
+class CreateEditContactRequestScreen extends StatefulWidget {
+  const CreateEditContactRequestScreen({super.key});
 
   @override
-  State<CreateEditContactScreen> createState() => _CreateEditContactScreenState();
+  State<CreateEditContactRequestScreen> createState() => _CreateEditContactRequestScreenState();
 }
 
-class _CreateEditContactScreenState extends State<CreateEditContactScreen> {
+class _CreateEditContactRequestScreenState extends State<CreateEditContactRequestScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();

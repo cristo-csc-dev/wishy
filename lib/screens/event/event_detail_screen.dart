@@ -1,6 +1,7 @@
 // lib/screens/event_detail_screen.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/event.dart';
@@ -321,7 +322,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => ListDetailScreen(wishList: list, isForGifting: true), // Se puede ver la lista del evento para regalar
+                        builder: (context) => ListDetailScreen(userId: UserAuth.getCurrentUser().uid, wishList: list, isForGifting: true), // Se puede ver la lista del evento para regalar
                       ));
                     },
                   ),
