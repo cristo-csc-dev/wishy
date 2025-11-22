@@ -225,4 +225,16 @@ class UserDao {
       'status': 'accepted',
     });
   }
+
+  Future<void> updateContactUserName(Contact contact, String name) async {
+    final userContactRef = _db
+        .collection('users')
+        .doc(UserAuth.getCurrentUser().uid)
+        .collection('contacts')
+        .doc(contact.id);
+    
+    await userContactRef.update({
+      'name': name,
+    });
+  }
 }

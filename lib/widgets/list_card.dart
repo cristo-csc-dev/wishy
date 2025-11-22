@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/models/wish_list.dart';
 
 class ListCard extends StatelessWidget {
@@ -32,6 +33,7 @@ class ListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool showOptions = wishList.ownerId == UserAuth.getCurrentUser().uid;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       elevation: 2,
@@ -58,27 +60,29 @@ class ListCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'edit') onEdit();
-                      if (value == 'share') onShare();
-                      if (value == 'delete') onDelete();
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Text('Editar'),
-                      ),
-                      // const PopupMenuItem<String>(
-                      //   value: 'share',
-                      //   child: Text('Compartir'),
-                      // ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Text('Eliminar'),
-                      ),
-                    ],
-                  ),
+                  if (showOptions)...[
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') onEdit();
+                        if (value == 'share') onShare();
+                        if (value == 'delete') onDelete();
+                      },
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Text('Editar'),
+                        ),
+                        // const PopupMenuItem<String>(
+                        //   value: 'share',
+                        //   child: Text('Compartir'),
+                        // ),
+                        const PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Text('Eliminar'),
+                        ),
+                      ],
+                    ),
+                  ]
                 ],
               ),
               const SizedBox(height: 8),

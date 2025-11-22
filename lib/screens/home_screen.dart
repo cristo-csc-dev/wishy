@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:uuid/uuid.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/notification_dao.dart';
@@ -17,11 +16,11 @@ import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
-import 'package:wishy/screens/user/contact_list_screen.dart';
-import 'package:wishy/screens/user/create_edit_contact_request_screen.dart';
+import 'package:wishy/screens/contacts/contact_list_screen.dart';
+import 'package:wishy/screens/contacts/create_edit_contact_request_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
-import 'package:wishy/screens/user/friend_list_overview_screen.dart';
+import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
@@ -470,44 +469,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundImage: contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty
-                            ? NetworkImage(contact.avatarUrl!)
-                            : null,
-                        backgroundColor: Colors.blueGrey.shade200,
-                        child: contact.avatarUrl == null || contact.avatarUrl!.isEmpty
-                            ? const Icon(Icons.person, size: 30, color: Colors.white)
-                            : null,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              contact.name ?? contact.email,
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            child: Text(
+                              contact.name?? '',
+                              style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+                            ),
+                          ), // Usar un icono de la lista
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              contact.name?? contact.email,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${contact.sharedWishLists.length} Listas de Deseos',
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
-                            if (contact.nextEventDate != null)
-                              Text(
-                                'Próximo Evento: ${contact.nextEventDate!.toIso8601String().split('T')[0]}',
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                              ),
-                          ],
-                        ),
+                          ),
+                          IconButton(
+                            onPressed: () {}, 
+                            icon: const Icon(Icons.edit)
+                          ),
+                        ],
                       ),
-                      const Icon(Icons.arrow_forward_ios, color: Colors.grey),
                     ],
                   ),
                 ),
