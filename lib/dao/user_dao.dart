@@ -69,9 +69,9 @@ class UserDao {
     }
 
     DocumentSnapshot doc = await _db.collection('users')
-        .doc(recipientUid)
-        .collection('contacts')
         .doc(UserAuth.getCurrentUser().uid)
+        .collection('contactRequests')
+        .doc(recipientUid)
         .get();
     Map<String, dynamic>? data = {};
     if (doc.exists) {

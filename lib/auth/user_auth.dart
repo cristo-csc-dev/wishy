@@ -2,6 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class UserAuth {
 
+  static Future<UserCredential> signIn(String user, String password) async {
+    return _getInstance().signInWithEmailAndPassword(
+      email: user,
+      password: password,
+    );
+  }
+
   static bool isUserAuthenticated() {
     return _getInstance().currentUser != null;
   }
@@ -9,6 +16,7 @@ class UserAuth {
   static bool isUserAuthenticatedAndVerified() {
     if(_getInstance().currentUser != null) {
       return _getInstance().currentUser!.emailVerified;
+      // return true;
     }
     return false;
   }

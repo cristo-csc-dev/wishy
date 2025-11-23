@@ -214,25 +214,34 @@ async function recomputeSharedWithMe(userId) {
 
   for (const contactDoc of contactsSnap.docs) {
     const contactId = contactDoc.id;
+    const name =
+      contactDoc.data().name || contactDoc.data().email;
 
     // Consulta las wishlists del contacto que estén compartidas con userId
     const wlSnap = await admin
         .firestore()
+        .doc(contactId)
         .collection("wishlists")
-        .where("ownerId", "==", contactId)
         .where("sharedWithContactIds", "array-contains", userId)
         .get();
 
     for (const doc of wlSnap.docs) {
       const data = doc.data();
-      wishlistEntries.set(doc.id, {
+      const sharedDoc = admin.firestore()
+          .collection("users")
+          .doc(userId)
+          .collection("sharedWithMe")
+          .doc(doc.id);
+      sharedDoc.set({
         id: doc.id,
         name: data.name || "",
         ownerId: data.ownerId || contactId,
+        ownerName: name,
         privacy: data.privacy || "",
         // añade aquí otros campos si los necesitas
         path: doc.ref.path,
-      });
+        ref: doc.ref,
+      }, {merge: true});
     }
   }
   const sharedWithMeArray = Array.from(wishlistEntries.values());

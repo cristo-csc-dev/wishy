@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/utils/message_utils.dart';
 import 'create_user_screen.dart'; // Importa la nueva pantalla de creación
@@ -26,18 +27,18 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
+      await UserAuth.signIn(
+        _emailController.text,
+        _passwordController.text,
       );
 
-      if(await UserDao().getUserById(_auth.currentUser!.uid) == null) {
+      if(await UserDao().getUserById(UserAuth.getCurrentUser().uid) == null) {
         await UserDao().createUser(_auth.currentUser!.uid, _emailController.text, _auth.currentUser!.displayName ?? "Sin nombre");
       }
 
     } on FirebaseAuthException catch (e) {
       String message;
-      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+      if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
         message = 'Usuario o contraseña incorrectos.';
       } else {
         message = 'Error: ${e.message}';

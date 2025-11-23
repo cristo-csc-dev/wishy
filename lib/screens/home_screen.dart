@@ -159,30 +159,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             );
-          } else if (_selectedIndex == 1) {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CreateEditContactRequestScreen()),
-            );
-            if (result != null && result is WishList) {
-              setState(() {
-                //userWishLists.add(result);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lista "${result.name}" creada.')));
-            }
-          } else { // Si no, crea una lista normal
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CreateEditListScreen()),
-            );
-            if (result != null && result is WishList) {
-              setState(() {
-                //userWishLists.add(result);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lista "${result.name}" creada.')));
-            }
           }
         },
         child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico
@@ -416,11 +392,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGiftListsContactsView() {
-    /*if (contactsWithSharedLists.isEmpty) {
-      return const Center(
-        child: Text('Nadie ha compartido una lista contigo aún.'),
-      );
-    }*/
     return StreamBuilder<QuerySnapshot>(
       stream: UserDao().getAcceptedContactsStream(),
       builder: (context, snapshot) {
