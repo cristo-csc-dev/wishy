@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: (_selectedIndex == 0)? FloatingActionButton(
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
           if (_selectedIndex == 2) {
@@ -186,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },
         child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico
-      ),
+      ): null,
     );
   }
 

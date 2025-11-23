@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
+import 'package:wishy/screens/contacts/create_edit_contact_request_screen.dart';
 import 'package:wishy/screens/contacts/edit_contact_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 
@@ -56,40 +57,6 @@ class ContactsListScreen extends StatelessWidget {
           itemCount: contactsWithSharedLists.length,
           itemBuilder: (context, index) {
             final contact = contactsWithSharedLists[index];
-            // return Card(
-            //   child: ListTile(
-            //     leading: CircleAvatar(
-            //       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            //       child: Text(
-            //         contact.name?? '',
-            //         style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-            //       ),
-            //     ),
-            //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            //     onTap: () {
-            //       Navigator.push(
-            //         context,
-            //         MaterialPageRoute(
-            //           builder: (context) => FriendListsOverviewScreen(contact: contact),
-            //         ),
-            //       );
-            //     },
-            //     title: Text(
-            //       contact.name?? '',
-            //       style: const TextStyle(fontWeight: FontWeight.w600),
-            //     ),
-            //     subtitle: Column(
-            //       crossAxisAlignment: CrossAxisAlignment.start,
-            //       children: [
-            //         if (contact.email.isNotEmpty) Text(contact.email),
-            //         // Text(
-            //         //   'ID de Usuario: ${contact.userId.substring(0, 8)}...', // Muestra solo los primeros caracteres del ID
-            //         //   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            //         // ),
-            //       ],
-            //     ),
-            //   ),
-            // );
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               elevation: 2,
@@ -185,6 +152,16 @@ class ContactsListScreen extends StatelessWidget {
           return _buildContent(snapshot);
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          // Si estamos en la pestaña de eventos, el FAB crea un evento
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateEditContactRequestScreen()),
+          );
+        },
+        child: Icon(Icons.add), // Icono dinámico
+      )
     );
   }
 }
