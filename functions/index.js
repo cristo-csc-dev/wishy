@@ -40,7 +40,7 @@ setGlobalOptions({
 // });
 
 exports.onNewContactRequest = functions.firestore
-    .document("users/{recipientUserId}/contactRequests/{senderUserId}")
+    .document("users/{senderUserId}/contactRequests/{recipientUserId}")
     .onCreate(async (snap, context) => {
       const requestData = snap.data();
       const {recipientUserId, senderUserId, senderName} = requestData;
@@ -51,6 +51,7 @@ exports.onNewContactRequest = functions.firestore
         title: "Nueva solicitud de contacto",
         message: `${senderName} quiere añadirte a sus contactos.`,
         senderId: senderUserId,
+        senderName: senderName,
         status: "pending",
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         isRead: false,
@@ -112,10 +113,28 @@ exports.onContactRequestStatusUpdate = functions.firestore
               sender: senderId,
               status: newStatus,
             });
+
+        const recipientContactData = ((await recipientContactRef.get())).data();
+        const recipientContactName =
+          recipientContactData.name || recipientContactData.email;
+        const newNotification = {
+          type: "contactAccepted",
+          title: "Solicitud de contacto aceptada",
+          message: `${recipientContactName} ha aceptado tu solicitud.`,
+          senderId: recipientId,
+          status: "pending",
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          isRead: false,
+        };
+
+        const notificationRef = admin.firestore()
+            .collection(`users/${senderId}/notifications`);
+
+        await notificationRef.add(newNotification);
       } else if (newStatus === "rejected") {
         await Promise.all([
           recipientContactRef.delete().catch((e) => {}),
-          senderContactRef.delete().catch((e) => {})
+          senderContactRef.delete().catch((e) => {}),
         ]);
 
         logger.info(`Contactos eliminados/descartados entre 
@@ -127,3 +146,100 @@ exports.onContactRequestStatusUpdate = functions.firestore
       }
       return null;
     });
+
+/**
+ * Trigger: cuando un contact se crea/actualiza/elimina para un usuario,
+ * recalcula sharedWithMe de ese usuario.
+ */
+exports.recomputeSharedWithMeOnContactsChange = functions.firestore
+    .document("users/{userId}/contacts/{contactId}")
+    .onWrite(async (change, context) => {
+      const userId = context.params.userId;
+      try {
+        await recomputeSharedWithMe(userId);
+        return null;
+      } catch (err) {
+        functions.logger.error(
+            "Error recomputing sharedWithMe for", userId, err,
+        );
+        throw err;
+      }
+    });
+
+exports.recomputeSharedWithMeOnWishlistsChange = functions.firestore
+    .document("users/{userId}/wishlists/{wishlistId}")
+    .onWrite(async (change, context) => {
+      const userId = context.params.userId;
+      try {
+        const after = change.after.data();
+        (after.sharedWithContactIds || []).forEach(async (contactId) => {
+          await recomputeSharedWithMe(contactId);
+        });
+        return null;
+      } catch (err) {
+        functions.logger.error(
+            "Error recomputing sharedWithMe for", userId, err,
+        );
+        throw err;
+      }
+    });
+
+/**
+ * Recalcula el campo sharedWithMe para un usuario dado.
+ * @param {userId} userId
+ * @return {void}
+ */
+async function recomputeSharedWithMe(userId) {
+  const contactsRef = admin
+      .firestore()
+      .collection("users")
+      .doc(userId)
+      .collection("contacts")
+      .where("status", "==", "accepted");
+  const contactsSnap = await contactsRef.get();
+
+  if (contactsSnap.empty) {
+    await admin
+        .firestore()
+        .collection("users")
+        .doc(userId)
+        .update({
+          sharedWithMe: [],
+          sharedWithMeLastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        });
+    return;
+  }
+
+  const wishlistEntries = {};
+
+  for (const contactDoc of contactsSnap.docs) {
+    const contactId = contactDoc.id;
+
+    // Consulta las wishlists del contacto que estén compartidas con userId
+    const wlSnap = await admin
+        .firestore()
+        .collection("wishlists")
+        .where("ownerId", "==", contactId)
+        .where("sharedWithContactIds", "array-contains", userId)
+        .get();
+
+    for (const doc of wlSnap.docs) {
+      const data = doc.data();
+      wishlistEntries.set(doc.id, {
+        id: doc.id,
+        name: data.name || "",
+        ownerId: data.ownerId || contactId,
+        privacy: data.privacy || "",
+        // añade aquí otros campos si los necesitas
+        path: doc.ref.path,
+      });
+    }
+  }
+  const sharedWithMeArray = Array.from(wishlistEntries.values());
+  await admin
+      .firestore()
+      .collection("users").doc(userId).update({
+        sharedWithMe: sharedWithMeArray,
+        sharedWithMeLastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      });
+}
