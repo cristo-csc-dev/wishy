@@ -25,7 +25,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
       try {
         await _userDao.sendContactRequest( email: _emailController.text, message: '',);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Contacto agregado con éxito.')),
+          const SnackBar(content: Text('Solicitud enviada con éxito.')),
         );
         Navigator.of(context).pop();
       } catch (e) {

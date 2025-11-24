@@ -43,15 +43,19 @@ exports.onNewContactRequest = functions.firestore
     .document("users/{senderUserId}/contactRequests/{recipientUserId}")
     .onCreate(async (snap, context) => {
       const requestData = snap.data();
-      const {recipientUserId, senderUserId, senderName} = requestData;
+      const {senderUserId, senderName, senderEmail, recipientUserId, recipientName, recipientEmail, message} = requestData;
 
       // Estructura de la notificación para el usuario receptor.
       const newNotification = {
         type: "contactRequest",
-        title: "Nueva solicitud de contacto",
-        message: `${senderName} quiere añadirte a sus contactos.`,
-        senderId: senderUserId,
+        title: `Nueva solicitud de contacto de ${senderName || ''} (${senderEmail})`,
+        message: message,
+        senderUserId: senderUserId,
         senderName: senderName,
+        senderEmail: senderEmail,
+        recipientUserId: recipientUserId,
+        recipientName: recipientName,
+        recipientEmail: recipientEmail,
         status: "pending",
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         isRead: false,
@@ -77,11 +81,9 @@ exports.onContactRequestStatusUpdate = functions.firestore
       if (after.type !== "contactRequest" || before.status === after.status) {
         return null;
       }
-
       const recipientId = context.params.userId;
       const senderId = after.senderId;
       const newStatus = after.status;
-
       if (!senderId) {
         logger.error(
             `ERROR: Notificación ${context.params.notificationId} 
@@ -90,20 +92,28 @@ exports.onContactRequestStatusUpdate = functions.firestore
         return null;
       }
 
-      const recipientContactRef = admin
-          .firestore()
-          .doc(`users/${recipientId}/contacts/${senderId}`);
-      const senderContactRef = admin
-          .firestore()
-          .doc(`users/${senderId}/contacts/${recipientId}`);
-      if (newStatus === "accepted") {
-        const contactData = {
-          addedAt: admin.firestore.FieldValue.serverTimestamp(),
-        };
+      const addedAt = admin.firestore.FieldValue.serverTimestamp();
+      const recipientContactData = {
+        name: after.senderName,
+        email: after.senderEmail,
+        createdAt: addedAt,
+      }
+      const senderContactData = {
+        name: after.recipientName,
+        email: after.recipientEmail,
+        createdAt: addedAt,
+      }
 
+      if (newStatus === "accepted") {      
         await Promise.all([
-          recipientContactRef.set(contactData),
-          senderContactRef.set(contactData),
+          await admin
+            .firestore()
+            .doc(`users/${recipientId}/contacts/${senderId}`)
+            .set(recipientContactData, {merge: true}),
+          await admin
+            .firestore()
+            .doc(`users/${senderId}/contacts/${recipientId}`)
+            .set(senderContactData, {merge: true})
         ]);
 
         logger
@@ -129,7 +139,6 @@ exports.onContactRequestStatusUpdate = functions.firestore
 
         const notificationRef = admin.firestore()
             .collection(`users/${senderId}/notifications`);
-
         await notificationRef.add(newNotification);
       } else if (newStatus === "rejected") {
         await Promise.all([
@@ -144,6 +153,13 @@ exports.onContactRequestStatusUpdate = functions.firestore
           status: newStatus,
         });
       }
+      change.after.ref.delete().catch((e) => {});
+      admin
+        .firestore()
+        .doc(`users/${senderId}/contacts/${recipientId}`)
+        .delete()
+        .catch((e) => {});
+
       return null;
     });
 

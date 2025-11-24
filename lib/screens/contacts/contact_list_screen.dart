@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
-import 'package:wishy/screens/contacts/create_edit_contact_request_screen.dart';
+import 'package:wishy/screens/contacts/create_contact_request_screen.dart';
 import 'package:wishy/screens/contacts/edit_contact_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 
@@ -157,7 +157,7 @@ class ContactsListScreen extends StatelessWidget {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CreateEditContactRequestScreen()),
+            MaterialPageRoute(builder: (context) => const CreateContactRequestScreen()),
           );
         },
         child: Icon(Icons.add), // Icono dinámico

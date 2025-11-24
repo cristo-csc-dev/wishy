@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:wishy/models/notification_type.dart';
+import 'package:wishy/screens/notification/types/notification_type.dart';
 
 class AppNotification {
   final String id;

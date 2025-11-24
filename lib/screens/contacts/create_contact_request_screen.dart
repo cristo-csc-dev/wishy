@@ -1,16 +1,17 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 
-class CreateEditContactRequestScreen extends StatefulWidget {
-  const CreateEditContactRequestScreen({super.key});
+class CreateContactRequestScreen extends StatefulWidget {
+  const CreateContactRequestScreen({super.key});
 
   @override
-  State<CreateEditContactRequestScreen> createState() => _CreateEditContactRequestScreenState();
+  State<CreateContactRequestScreen> createState() => _CreateContactRequestScreenState();
 }
 
-class _CreateEditContactRequestScreenState extends State<CreateEditContactRequestScreen> {
+class _CreateContactRequestScreenState extends State<CreateContactRequestScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
@@ -18,12 +19,12 @@ class _CreateEditContactRequestScreenState extends State<CreateEditContactReques
   @override
   void initState() {
     super.initState();
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = UserAuth.getCurrentUser();
     // Asigna el nombre de usuario actual o un alias por defecto
-    _nameController.text = currentUser?.displayName ?? '';
+    _nameController.text = currentUser.displayName ?? currentUser.email?? '';
 
     // Prepara el mensaje por defecto
-    final defaultName = currentUser?.displayName ?? 'un amigo';
+    final defaultName = currentUser.displayName ?? 'un amigo';
     _messageController.text =
         'Hola, soy $defaultName. ¿Me agregas como wishy-contacto?';
   }

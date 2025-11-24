@@ -17,7 +17,7 @@ import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/contacts/contact_list_screen.dart';
-import 'package:wishy/screens/contacts/create_edit_contact_request_screen.dart';
+import 'package:wishy/screens/contacts/create_contact_request_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
@@ -126,39 +126,16 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: (_selectedIndex == 0)? FloatingActionButton(
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
-          if (_selectedIndex == 2) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) {
-                  return FutureBuilder<List<Contact>>(
-                    future: UserDao().getAcceptedContacts(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Scaffold(
-                          body: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      if (snapshot.hasError) {
-                        return Scaffold(
-                          appBar: AppBar(title: const Text('Error')),
-                          body: Center(child: Text('Error: ${snapshot.error}')),
-                        );
-                      }
-                      if (!snapshot.hasData) {
-                        return const Scaffold(
-                          body: Center(child: Text('No se encontraron contactos')),
-                        );
-                      }
-
-                      final acceptedContacts = snapshot.data!;
-                      return CreateEditEventScreen(
-                        availableContacts: acceptedContacts,
-                      );
-                    },
-                  );
-                },
-              ),
-            );
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateEditListScreen()),
+          );
+          if (result != null && result is WishList) {
+            setState(() {
+              //userWishLists.add(result);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Lista "${result.name}" creada.')));
           }
         },
         child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico

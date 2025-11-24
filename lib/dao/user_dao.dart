@@ -51,28 +51,33 @@ class UserDao {
     }
     
     // Busca al usuario destinatario por su email
-    final usersSnapshot = await _db
+    final recipientsSnapshot = await _db
       .collection('users')
       .where('email_lowercase', isEqualTo: email.toLowerCase())
       .limit(1)
       .get();
+    final senderSnapshot = await _db
+      .collection('users')
+      .doc(UserAuth.getCurrentUser().uid)
+      .get();
 
-    if (usersSnapshot.docs.isEmpty) {
+    if (recipientsSnapshot.docs.isEmpty) {
       throw Exception('No se encontró un usuario con ese email.');
     }
 
-    final recipientDoc = usersSnapshot.docs.first;
+    final recipientDoc = recipientsSnapshot.docs.first;
     final recipientUid = recipientDoc.id;
 
     if (recipientUid == UserAuth.getCurrentUser().uid) {
       throw Exception('No puedes agregarte a ti mismo como contacto.');
     }
 
-    DocumentSnapshot doc = await _db.collection('users')
+    DocumentReference contactRequestRef = _db
+        .collection('users')
         .doc(UserAuth.getCurrentUser().uid)
         .collection('contactRequests')
-        .doc(recipientUid)
-        .get();
+        .doc(recipientUid);
+    DocumentSnapshot doc = await contactRequestRef.get();
     Map<String, dynamic>? data = {};
     if (doc.exists) {
       data = doc.data() as Map<String, dynamic>;
@@ -85,22 +90,20 @@ class UserDao {
       }
     } else {
       data = {
-        'userId': UserAuth.getCurrentUser().uid,
-        'name': recipientDoc['name'],
+        'senderUserId': UserAuth.getCurrentUser().uid,
+        'senderName': senderSnapshot['name'],
+        'senderEmail': senderSnapshot['email'],
+        'recipientUserId': recipientUid,
+        'recipientName': recipientDoc['name'],
+        'recipientEmail': recipientDoc['email'],
         'message': message,
-        'email': recipientDoc['email'],
         'status': 'pending',
         'requestDate': Timestamp.now(),
         'requestBy': UserAuth.getCurrentUser().uid,
       };
     }
-
     // Crea un documento con los datos de la solicitud en la subcolección del destinatario
-    await _db
-        .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
-        .collection('contacts')
-        .doc(recipientUid)
+    await contactRequestRef
         .set(data, SetOptions(merge: true));
   }
 
@@ -236,5 +239,9 @@ class UserDao {
     await userContactRef.update({
       'name': name,
     });
+  }
+
+  void deleteNotification({required AppNotification notification}) {
+    notification.docRef!.reference.delete();
   }
 }
