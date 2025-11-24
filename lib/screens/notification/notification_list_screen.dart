@@ -74,7 +74,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
         break;
     }
 
-    return notification.type.getNotificationDecorator()!.decorate(context, notification);
+    return notification.type.getNotificationDecorator().decorate(context, notification);
 
   }
 }

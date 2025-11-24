@@ -43,12 +43,14 @@ exports.onNewContactRequest = functions.firestore
     .document("users/{senderUserId}/contactRequests/{recipientUserId}")
     .onCreate(async (snap, context) => {
       const requestData = snap.data();
-      const {senderUserId, senderName, senderEmail, recipientUserId, recipientName, recipientEmail, message} = requestData;
+      const {senderUserId, senderName, senderEmail, recipientUserId,
+        recipientName, recipientEmail, message} = requestData;
 
       // Estructura de la notificación para el usuario receptor.
       const newNotification = {
         type: "contactRequest",
-        title: `Nueva solicitud de contacto de ${senderName || ''} (${senderEmail})`,
+        title: `Nueva solicitud de contacto de 
+          ${senderName || ""} (${senderEmail})`,
         message: message,
         senderUserId: senderUserId,
         senderName: senderName,
@@ -97,23 +99,23 @@ exports.onContactRequestStatusUpdate = functions.firestore
         name: after.senderName,
         email: after.senderEmail,
         createdAt: addedAt,
-      }
+      };
       const senderContactData = {
         name: after.recipientName,
         email: after.recipientEmail,
         createdAt: addedAt,
-      }
+      };
 
-      if (newStatus === "accepted") {      
+      if (newStatus === "accepted") {
         await Promise.all([
           await admin
-            .firestore()
-            .doc(`users/${recipientId}/contacts/${senderId}`)
-            .set(recipientContactData, {merge: true}),
+              .firestore()
+              .doc(`users/${recipientId}/contacts/${senderId}`)
+              .set(recipientContactData, {merge: true}),
           await admin
-            .firestore()
-            .doc(`users/${senderId}/contacts/${recipientId}`)
-            .set(senderContactData, {merge: true})
+              .firestore()
+              .doc(`users/${senderId}/contacts/${recipientId}`)
+              .set(senderContactData, {merge: true}),
         ]);
 
         logger
@@ -124,7 +126,6 @@ exports.onContactRequestStatusUpdate = functions.firestore
               status: newStatus,
             });
 
-        const recipientContactData = ((await recipientContactRef.get())).data();
         const recipientContactName =
           recipientContactData.name || recipientContactData.email;
         const newNotification = {
@@ -141,10 +142,11 @@ exports.onContactRequestStatusUpdate = functions.firestore
             .collection(`users/${senderId}/notifications`);
         await notificationRef.add(newNotification);
       } else if (newStatus === "rejected") {
-        await Promise.all([
-          recipientContactRef.delete().catch((e) => {}),
-          senderContactRef.delete().catch((e) => {}),
-        ]);
+        await admin
+            .firestore()
+            .doc(`users/${senderId}/contactRequests/${recipientId}`)
+            .delete()
+            .catch((e) => {});
 
         logger.info(`Contactos eliminados/descartados entre 
           ${recipientId} y ${senderId}`, {
@@ -155,10 +157,10 @@ exports.onContactRequestStatusUpdate = functions.firestore
       }
       change.after.ref.delete().catch((e) => {});
       admin
-        .firestore()
-        .doc(`users/${senderId}/contacts/${recipientId}`)
-        .delete()
-        .catch((e) => {});
+          .firestore()
+          .doc(`users/${senderId}/contacts/${recipientId}`)
+          .delete()
+          .catch((e) => {});
 
       return null;
     });
@@ -206,6 +208,13 @@ exports.recomputeSharedWithMeOnWishlistsChange = functions.firestore
  * @return {void}
  */
 async function recomputeSharedWithMe(userId) {
+  const previousSharedWithMeIds = admin
+      .firestore()
+      .collection("users")
+      .doc(userId)
+      .collection("sharedWithMe")
+      .get()
+      .map((doc) => doc.id);
   const contactsRef = admin
       .firestore()
       .collection("users")
@@ -227,6 +236,7 @@ async function recomputeSharedWithMe(userId) {
   }
 
   const wishlistEntries = {};
+  const includedSharedWithMeIds = new Set();
 
   for (const contactDoc of contactsSnap.docs) {
     const contactId = contactDoc.id;
@@ -258,7 +268,18 @@ async function recomputeSharedWithMe(userId) {
         path: doc.ref.path,
         ref: doc.ref,
       }, {merge: true});
+      includedSharedWithMeIds.add(doc.id);
     }
+    previousSharedWithMeIds
+        .difference(includedSharedWithMeIds)
+        .forEach(async (removedId) => {
+          const removedDoc = admin.firestore()
+              .collection("users")
+              .doc(userId)
+              .collection("sharedWithMe")
+              .doc(removedId);
+          await removedDoc.delete();
+        });
   }
   const sharedWithMeArray = Array.from(wishlistEntries.values());
   await admin
