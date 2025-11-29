@@ -24,7 +24,6 @@ class WishlistDao {
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getSharedWishlistsStreamSnapshot(String userId) {
-    final currentUser = FirebaseAuth.instance.currentUser;
     if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
@@ -51,7 +50,6 @@ class WishlistDao {
   }
 
   Future<String> createWishlist(Map<String, dynamic> wishlistData) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
     if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
@@ -70,7 +68,6 @@ class WishlistDao {
 
   Future<void> addItem(String wishlistId, Map<String, dynamic> itemData) async {
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
       if (!UserAuth.isUserAuthenticatedAndVerified()) {
         throw Exception('Usuario no autenticado.');
       }
@@ -93,7 +90,6 @@ class WishlistDao {
   }
 
   Future<void> updateItem(String wishlistId, String itemId,  Map<String, dynamic> itemData) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
     if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
@@ -113,15 +109,14 @@ class WishlistDao {
   }
 
   Future<void> removeItem(String wishlistId, String itemId) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     try {
       await _db.runTransaction((transaction) async {
         final wishlistRef = _db
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(UserAuth.getCurrentUser().uid)
           .collection('wishlists')
           .doc(wishlistId);
         CollectionReference itemsRef = wishlistRef.collection('items');
@@ -136,35 +131,44 @@ class WishlistDao {
     }
   }
 
-  void createOrUpdateWishlist(String id, Map<String, Object> map) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
+  void createOrUpdateWishlist(String id, Map<String, Object> map) async {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
-    _db
+    await _db
      .collection('users')
-      .doc(currentUser.uid)
+      .doc(UserAuth.getCurrentUser().uid)
       .collection('wishlists')
       .doc(id)
       .set(map, SetOptions(merge: true));
   }
 
+  Future<DocumentSnapshot<Map<String, dynamic>>> getWishlistById(String id) async {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+      throw Exception('Usuario no autenticado.');
+    }
+    return await _db
+      .collection('users')
+      .doc(UserAuth.getCurrentUser().uid)
+      .collection('wishlists')
+      .doc(id)
+      .get();
+  }
+
   void deleteWishlist(String id) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     _db
       .collection('users')
-      .doc(currentUser.uid)
+      .doc(UserAuth.getCurrentUser().uid)
       .collection('wishlists')
       .doc(id)
       .delete();
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(String userId, WishList currentWishList) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     return _db

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
@@ -44,8 +44,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
       final String id = widget.wishList?.id ?? const Uuid().v4();
 
       try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null || !user.emailVerified) {
+        if (!UserAuth.isUserAuthenticatedAndVerified()) {
           throw Exception('Usuario no autenticado');
         }
         WishlistDao().createOrUpdateWishlist(id, {
@@ -54,7 +53,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           'sharedWithContactIds': _selectedPrivacy == ListPrivacy.shared
               ? _selectedContactIds
               : [],
-          'ownerId': user.uid,
+          'ownerId': UserAuth.getCurrentUser().uid,
           'createdAt': FieldValue.serverTimestamp(),
           'itemCount': widget.wishList?.itemCount ?? 0,
         });
@@ -65,29 +64,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
         return;
       }
 
-      final WishList newList = WishList(
-        name: _nameController.text,
-        privacy: _selectedPrivacy,
-        sharedWithContactIds: _selectedPrivacy == ListPrivacy.shared
-            ? _selectedContactIds
-            : [],
-        ownerId: FirebaseAuth.instance.currentUser!.uid,
-      );
-      Navigator.pop(context, newList); // Devuelve la nueva/actualizada lista
-    }
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedEventDate ?? DateTime.now(),
-      firstDate: DateTime(2024),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null && picked != _selectedEventDate) {
-      setState(() {
-        _selectedEventDate = picked;
-      });
+      Navigator.pop(context, id); // Devuelve la nueva/actualizada lista
     }
   }
 
@@ -188,16 +165,6 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
                 },
               ),
               RadioListTile<ListPrivacy>(
-                title: const Text('Pública (Cualquiera con el enlace)'),
-                value: ListPrivacy.public,
-                groupValue: _selectedPrivacy,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPrivacy = value!;
-                  });
-                },
-              ),
-              RadioListTile<ListPrivacy>(
                 title: const Text('Compartir con Contactos/Grupos específicos'),
                 value: ListPrivacy.shared,
                 groupValue: _selectedPrivacy,
@@ -231,33 +198,6 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              //     Text(
-              //       'Permitir marcar como "Comprado"',
-              //       style: Theme.of(context).textTheme.titleMedium,
-              //     ),
-              //     Switch(
-              //       value: _allowMarkingAsBought,
-              //       onChanged: (value) {
-              //         setState(() {
-              //           _allowMarkingAsBought = value;
-              //         });
-              //       },
-              //     ),
-              //   ],
-              // ),
-              // const SizedBox(height: 24),
-              // ListTile(
-              //   title: Text(
-              //     _selectedEventDate == null
-              //         ? 'Asociar fecha de evento (Opcional)'
-              //         : 'Fecha del evento: ${_selectedEventDate!.toLocal().toIso8601String().split('T')[0]}',
-              //   ),
-              //   trailing: const Icon(Icons.calendar_today),
-              //   onTap: () => _selectDate(context),
-              // ),
             ],
           ),
         ),

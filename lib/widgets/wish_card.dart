@@ -153,22 +153,6 @@ class WishCard extends StatelessWidget {
                         elevation: 0,
                       ),
                     ),
-                  if (isForGifting)
-                    wishItem.isBought
-                        ? const Chip(
-                            label: Text('Regalo ya reservado', style: TextStyle(color: Colors.white)),
-                            backgroundColor: Colors.blueGrey,
-                            avatar: Icon(Icons.check, color: Colors.white),
-                          )
-                        : ElevatedButton.icon(
-                            onPressed: onMarkAsBought,
-                            icon: const Icon(Icons.check_circle_outline, size: 18),
-                            label: const Text('Marcar como Comprado'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
                 ],
               ),
             ],

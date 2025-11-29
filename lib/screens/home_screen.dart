@@ -17,7 +17,6 @@ import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/contacts/contact_list_screen.dart';
-import 'package:wishy/screens/contacts/create_contact_request_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
@@ -25,7 +24,6 @@ import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
 import 'package:wishy/models/event.dart'; // ¡NUEVO!
-import 'package:wishy/screens/event/create_edit_event_screen.dart'; // ¡NUEVO!
 import 'package:wishy/screens/event/event_detail_screen.dart'; // ¡NUEVO!
 
 class HomeScreen extends StatefulWidget {
@@ -439,10 +437,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () {}, 
-                            icon: const Icon(Icons.edit)
                           ),
                         ],
                       ),

@@ -191,6 +191,10 @@ exports.recomputeSharedWithMeOnWishlistsChange = functions.firestore
       try {
         const after = change.after.data();
         (after.sharedWithContactIds || []).forEach(async (contactId) => {
+          functions.logger.info(
+              `Recomputing sharedWithMe for contact ${contactId} 
+              due to wishlist change by ${userId}`,
+          );
           await recomputeSharedWithMe(contactId);
         });
         return null;
@@ -208,13 +212,15 @@ exports.recomputeSharedWithMeOnWishlistsChange = functions.firestore
  * @return {void}
  */
 async function recomputeSharedWithMe(userId) {
-  const previousSharedWithMeIds = admin
+  const previousSnap = await admin
       .firestore()
       .collection("users")
       .doc(userId)
       .collection("sharedWithMe")
-      .get()
-      .map((doc) => doc.id);
+      .get();
+  const previousSharedWithMeIds =
+      new Set(previousSnap.docs.map((doc) => doc.id));
+
   const contactsRef = admin
       .firestore()
       .collection("users")
