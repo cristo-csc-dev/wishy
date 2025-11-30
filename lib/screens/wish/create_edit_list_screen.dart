@@ -21,8 +21,6 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   late TextEditingController _nameController;
   ListPrivacy _selectedPrivacy = ListPrivacy.private;
   List<String> _selectedContactIds = [];
-  DateTime? _selectedEventDate;
-  final bool _allowMarkingAsBought = true;
   List<Contact> _contacts = [];
 
   @override
@@ -31,6 +29,15 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
     _nameController = TextEditingController(text: widget.wishList?.name ?? '');
     _selectedPrivacy = widget.wishList?.privacy ?? ListPrivacy.private;
     _selectedContactIds = List.from(widget.wishList?.sharedWithContactIds ?? []);
+    _loadContacts();
+  }
+
+  Future<void> _loadContacts() async {
+    await UserDao().getAcceptedContacts().then((contacts) {
+      setState(() {
+        _contacts = contacts;
+      });
+    });
   }
 
   @override
@@ -39,7 +46,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
     super.dispose();
   }
 
-  void _saveList() async{
+  void _saveList() async {
     if (_formKey.currentState!.validate()) {
       final String id = widget.wishList?.id ?? const Uuid().v4();
 
@@ -71,7 +78,6 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   void _selectContacts() async {
     // Esto es una simulación. En una app real, abrirías una pantalla
     // para seleccionar contactos de tu base de datos o agenda.
-     _contacts = await UserDao().getAcceptedContacts();
 
     final List<String>? result = await showDialog<List<String>>(
       context: context,
@@ -187,7 +193,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
                   runSpacing: 4.0,
                   children: _selectedContactIds.map((id) {
                     return Chip(
-                      label: Text("MiContacto"),
+                      label: Text(_contacts.firstWhere((c) => c.id == id).name ?? '--'),
                       onDeleted: () {
                         setState(() {
                           _selectedContactIds.remove(id);

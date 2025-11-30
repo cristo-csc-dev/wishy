@@ -6,7 +6,12 @@ class AppNotification {
   final NotificationType type;
   final String title;
   final String message;
-  final Sender sender;
+  String senderName;
+  String senderEmail;
+  String senderUserId;
+  String recipientUserId;
+  String recipientName;
+  String recipientEmail;
   final DateTime timestamp;
   final bool isRead;
   final DocumentReference? contactRef;
@@ -17,7 +22,12 @@ class AppNotification {
     required this.type,
     required this.title,
     required this.message,
-    required this.sender,
+    required this.senderUserId,
+    this.senderName = '',
+    this.senderEmail = '',
+    required this.recipientUserId,
+    this.recipientName = '',
+    required this.recipientEmail,
     required this.timestamp,
     this.isRead = false,
     this.contactRef,
@@ -32,10 +42,15 @@ class AppNotification {
       type: type,
       title: type.title,
       message: data['message'] as String,
-      sender: Sender.fromMap(data['sender'] as Map<String, dynamic>),
+      recipientUserId: data['recipientUserId'],
+      recipientName: data['recipientName'] ?? '',
+      recipientEmail: data['recipientEmail'] ?? '',
+      senderName: data['senderName'],
+      senderEmail: data['senderEmail'],
+      senderUserId: data['senderUserId'],
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       isRead: data['isRead'] as bool? ?? false,
-      contactRef: data['ref'] as DocumentReference?,
+      //contactRef: data['ref'] as DocumentReference?,
       docRef: doc,
     );
   }

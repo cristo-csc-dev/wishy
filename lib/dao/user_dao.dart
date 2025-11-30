@@ -120,33 +120,32 @@ class UserDao {
     // Usa una transacción para asegurar la atomicidad de las operaciones
     return _db.runTransaction((transaction) async {
 
-      DocumentSnapshot requestContact = await transaction.get(notification.contactRef!);
-
-      if (!requestContact.exists ||
-          requestContact['status'] != 'pending') {
-        throw Exception('La solicitud de contacto no es válida o ya ha sido procesada.');
-      }
-
-      await notification.contactRef!.set( {
-        'status': response,
-        'acceptanceDate': Timestamp.now(),
-      }, SetOptions(merge: true));
-
       // 2. Crea el documento bidireccional en la subcolección del emisor
+      var data = {
+          'userId': UserAuth.getCurrentUser().uid,
+          'name': notification.senderName,
+          'email': notification.senderEmail,
+          'status': response,
+          'requestDate': notification.timestamp,
+          'acceptanceDate': Timestamp.now(),
+          'requestBy': notification.senderUserId,
+          'acceptedBy': UserAuth.getCurrentUser().uid,
+        };
       _db
         .collection('users')
         .doc(UserAuth.getCurrentUser().uid)
         .collection('contacts')
-        .doc(notification.sender.id)
-        .set({
-          'userId': UserAuth.getCurrentUser().uid,
-          'name': notification.sender.name,
-          'email': notification.sender.email,
-          'status': response,
-          'requestDate': requestContact['requestDate'],
-          'acceptanceDate': Timestamp.now(),
-          'requestBy': notification.sender.id,
-        }, SetOptions(merge: true));
+        .doc(notification.senderUserId)
+        .set(data, SetOptions(merge: true));
+       
+      data['name'] = notification.recipientName;
+      data['email'] = notification.recipientEmail;
+      _db
+        .collection('users')
+        .doc(notification.senderUserId)
+        .collection('contacts')
+        .doc(UserAuth.getCurrentUser().uid)
+        .set(data, SetOptions(merge: true));
       notification.docRef!.reference.delete();
     });
   }

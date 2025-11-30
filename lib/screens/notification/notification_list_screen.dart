@@ -47,34 +47,6 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
   }
 
   Widget _buildNotificationCard(BuildContext context, AppNotification notification) {
-    IconData icon;
-    String subtitle;
-    VoidCallback? onTap;
-    bool showActionButtons = false;
-
-    // Selecciona el icono y la acción según el tipo de notificación.
-    switch (notification.type) {
-      case NotificationType.contactRequest:
-        icon = Icons.person_add;
-        subtitle = notification.message;
-        showActionButtons = true;
-        break;
-      case NotificationType.contactAccepted:
-        icon = Icons.check_circle;
-        subtitle = 'Tu solicitud de contacto ha sido aceptada.';
-        break;
-      case NotificationType.eventInvitation:
-        icon = Icons.event;
-        subtitle = 'Has sido invitado a un evento.';
-        showActionButtons = true;
-        break;
-      default:
-        icon = Icons.info;
-        subtitle = 'Notificación desconocida.';
-        break;
-    }
-
     return notification.type.getNotificationDecorator().decorate(context, notification);
-
   }
 }
