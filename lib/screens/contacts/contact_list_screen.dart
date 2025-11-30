@@ -135,16 +135,6 @@ class ContactsListScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Mis Contactos'),
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Simulación: Pantalla para añadir un nuevo contacto')),
-              );
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<List<Contact>>(
         stream: _getContactsStream(),
