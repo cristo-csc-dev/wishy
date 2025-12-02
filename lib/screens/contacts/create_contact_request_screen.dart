@@ -19,7 +19,7 @@ class _CreateContactRequestScreenState extends State<CreateContactRequestScreen>
   @override
   void initState() {
     super.initState();
-    final currentUser = UserAuth.getCurrentUser();
+    final currentUser = UserAuth.instance.getCurrentUser();
     // Asigna el nombre de usuario actual o un alias por defecto
     _nameController.text = currentUser.displayName ?? currentUser.email?? '';
 

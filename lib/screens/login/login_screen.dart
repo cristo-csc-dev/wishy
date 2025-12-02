@@ -27,12 +27,12 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await UserAuth.signIn(
+      await UserAuth.instance.signIn(
         _emailController.text,
         _passwordController.text,
       );
 
-      if(await UserDao().getUserById(UserAuth.getCurrentUser().uid) == null) {
+      if(await UserDao().getUserById(UserAuth.instance.getCurrentUser().uid) == null) {
         await UserDao().createUser(_auth.currentUser!.uid, _emailController.text, _auth.currentUser!.displayName ?? "Sin nombre");
       }
 

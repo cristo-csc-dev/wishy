@@ -33,7 +33,7 @@ class ListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool showOptions = wishList.ownerId == UserAuth.getCurrentUser().uid;
+    bool showOptions = wishList.ownerId == UserAuth.instance.getCurrentUser().uid;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       elevation: 2,

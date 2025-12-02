@@ -44,7 +44,7 @@ class NotificationContactRequestDecorator extends NotificationDecorator {
 
   // Lógica para aceptar una notificación
   Future<void> _handleAccept(BuildContext context, AppNotification notification) async {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: Usuario no autenticado.')),
       );

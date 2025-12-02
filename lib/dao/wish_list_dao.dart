@@ -24,7 +24,7 @@ class WishlistDao {
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getSharedWishlistsStreamSnapshot(String userId) {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     return _db
@@ -34,7 +34,7 @@ class WishlistDao {
       .where(
         Filter.and(
           Filter.or(
-            Filter('sharedWithContactIds', arrayContains: UserAuth.getCurrentUser().uid),
+            Filter('sharedWithContactIds', arrayContains: UserAuth.instance.getCurrentUser().uid),
             Filter('privacy', isEqualTo: 'public')
           ), 
           Filter('ownerId', isEqualTo: userId)
@@ -50,13 +50,13 @@ class WishlistDao {
   }
 
   Future<String> createWishlist(Map<String, dynamic> wishlistData) async {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     try {
       DocumentReference newWishList = await _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('wishlists')
         .add(wishlistData);
       return newWishList.id;
@@ -68,13 +68,13 @@ class WishlistDao {
 
   Future<void> addItem(String wishlistId, Map<String, dynamic> itemData) async {
     try {
-      if (!UserAuth.isUserAuthenticatedAndVerified()) {
+      if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
         throw Exception('Usuario no autenticado.');
       }
       await _db.runTransaction((transaction) async {
         final wishlistRef = _db
           .collection('users')
-          .doc(UserAuth.getCurrentUser().uid)
+          .doc(UserAuth.instance.getCurrentUser().uid)
           .collection('wishlists').doc(wishlistId);
         CollectionReference itemsRef = wishlistRef.collection('items');
 
@@ -90,13 +90,13 @@ class WishlistDao {
   }
 
   Future<void> updateItem(String wishlistId, String itemId,  Map<String, dynamic> itemData) async {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     try {
       await _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('wishlists')
         .doc(wishlistId)
         .collection('items')
@@ -109,14 +109,14 @@ class WishlistDao {
   }
 
   Future<void> removeItem(String wishlistId, String itemId) async {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     try {
       await _db.runTransaction((transaction) async {
         final wishlistRef = _db
           .collection('users')
-          .doc(UserAuth.getCurrentUser().uid)
+          .doc(UserAuth.instance.getCurrentUser().uid)
           .collection('wishlists')
           .doc(wishlistId);
         CollectionReference itemsRef = wishlistRef.collection('items');
@@ -132,43 +132,43 @@ class WishlistDao {
   }
 
   void createOrUpdateWishlist(String id, Map<String, Object> map) async {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     await _db
      .collection('users')
-      .doc(UserAuth.getCurrentUser().uid)
+      .doc(UserAuth.instance.getCurrentUser().uid)
       .collection('wishlists')
       .doc(id)
       .set(map, SetOptions(merge: true));
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getWishlistById(String id) async {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     return await _db
       .collection('users')
-      .doc(UserAuth.getCurrentUser().uid)
+      .doc(UserAuth.instance.getCurrentUser().uid)
       .collection('wishlists')
       .doc(id)
       .get();
   }
 
   void deleteWishlist(String id) {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     _db
       .collection('users')
-      .doc(UserAuth.getCurrentUser().uid)
+      .doc(UserAuth.instance.getCurrentUser().uid)
       .collection('wishlists')
       .doc(id)
       .delete();
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(String userId, WishList currentWishList) {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     return _db

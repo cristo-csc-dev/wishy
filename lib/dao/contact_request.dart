@@ -8,8 +8,8 @@ class ContactRequestDao {
     required String recipientUserId,
     required String recipientUserName,
   }) async {
-    final senderUser = UserAuth.getCurrentUser();
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    final senderUser = UserAuth.instance.getCurrentUser();
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('User not authenticated');
     }
 

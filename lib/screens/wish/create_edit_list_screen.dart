@@ -51,7 +51,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
       final String id = widget.wishList?.id ?? const Uuid().v4();
 
       try {
-        if (!UserAuth.isUserAuthenticatedAndVerified()) {
+        if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
           throw Exception('Usuario no autenticado');
         }
         WishlistDao().createOrUpdateWishlist(id, {
@@ -60,7 +60,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           'sharedWithContactIds': _selectedPrivacy == ListPrivacy.shared
               ? _selectedContactIds
               : [],
-          'ownerId': UserAuth.getCurrentUser().uid,
+          'ownerId': UserAuth.instance.getCurrentUser().uid,
           'createdAt': FieldValue.serverTimestamp(),
           'itemCount': widget.wishList?.itemCount ?? 0,
         });

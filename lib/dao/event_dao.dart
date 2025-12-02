@@ -13,8 +13,8 @@ class EventDao {
 
   // Obtiene el stream de datos del usuario actual
   Stream<DocumentSnapshot> getCurrentUserStream() {
-    if (UserAuth.isUserAuthenticatedAndVerified()) {
-      return _db.collection('users').doc(UserAuth.getCurrentUser().uid).snapshots();
+    if (UserAuth.instance.isUserAuthenticatedAndVerified()) {
+      return _db.collection('users').doc(UserAuth.instance.getCurrentUser().uid).snapshots();
     } else {
       throw Exception('No user is currently signed in.');
     }

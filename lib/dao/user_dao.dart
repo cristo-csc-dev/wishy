@@ -28,7 +28,7 @@ class UserDao {
     try {
       await _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .set({"name": name}, SetOptions(merge: true));
     } catch (e) {
       // Devolvemos el error para que el UI pueda manejarlo
@@ -46,7 +46,7 @@ class UserDao {
     required String email,
     required String? message,
   }) async {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     
@@ -58,7 +58,7 @@ class UserDao {
       .get();
     final senderSnapshot = await _db
       .collection('users')
-      .doc(UserAuth.getCurrentUser().uid)
+      .doc(UserAuth.instance.getCurrentUser().uid)
       .get();
 
     if (recipientsSnapshot.docs.isEmpty) {
@@ -68,13 +68,13 @@ class UserDao {
     final recipientDoc = recipientsSnapshot.docs.first;
     final recipientUid = recipientDoc.id;
 
-    if (recipientUid == UserAuth.getCurrentUser().uid) {
+    if (recipientUid == UserAuth.instance.getCurrentUser().uid) {
       throw Exception('No puedes agregarte a ti mismo como contacto.');
     }
 
     DocumentReference contactRequestRef = _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('contactRequests')
         .doc(recipientUid);
     DocumentSnapshot doc = await contactRequestRef.get();
@@ -90,7 +90,7 @@ class UserDao {
       }
     } else {
       data = {
-        'senderUserId': UserAuth.getCurrentUser().uid,
+        'senderUserId': UserAuth.instance.getCurrentUser().uid,
         'senderName': senderSnapshot['name'],
         'senderEmail': senderSnapshot['email'],
         'recipientUserId': recipientUid,
@@ -99,7 +99,7 @@ class UserDao {
         'message': message,
         'status': 'pending',
         'requestDate': Timestamp.now(),
-        'requestBy': UserAuth.getCurrentUser().uid,
+        'requestBy': UserAuth.instance.getCurrentUser().uid,
       };
     }
     // Crea un documento con los datos de la solicitud en la subcolección del destinatario
@@ -113,7 +113,7 @@ class UserDao {
       required AppNotification notification,
     }) async {
     
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
 
@@ -122,18 +122,18 @@ class UserDao {
 
       // 2. Crea el documento bidireccional en la subcolección del emisor
       var data = {
-          'userId': UserAuth.getCurrentUser().uid,
+          'userId': UserAuth.instance.getCurrentUser().uid,
           'name': notification.senderName,
           'email': notification.senderEmail,
           'status': response,
           'requestDate': notification.timestamp,
           'acceptanceDate': Timestamp.now(),
           'requestBy': notification.senderUserId,
-          'acceptedBy': UserAuth.getCurrentUser().uid,
+          'acceptedBy': UserAuth.instance.getCurrentUser().uid,
         };
       _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('contacts')
         .doc(notification.senderUserId)
         .set(data, SetOptions(merge: true));
@@ -144,7 +144,7 @@ class UserDao {
         .collection('users')
         .doc(notification.senderUserId)
         .collection('contacts')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .set(data, SetOptions(merge: true));
       notification.docRef!.reference.delete();
     });
@@ -168,7 +168,7 @@ class UserDao {
   // Función para obtener los UIDs de los contactos aceptados del usuario actual
   Future<List<Contact>> getAcceptedContacts() async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null || !UserAuth.isUserAuthenticatedAndVerified()) {
+    if (currentUser == null || !UserAuth.instance.isUserAuthenticatedAndVerified()) {
       return [];
     }
 
@@ -185,14 +185,14 @@ class UserDao {
   }
 
   Stream<QuerySnapshot> getAcceptedContactsStream() {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       // Retorna un stream vacío si no hay usuario
       return Stream.empty();
     }
 
     return _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('contacts')
         .where('status', isEqualTo: 'accepted')
         .orderBy('name')
@@ -202,14 +202,14 @@ class UserDao {
 
   // Función para recuperar las solicitudes de contacto pendientes para el usuario actual
   Stream<QuerySnapshot> getPendingRequests() {
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       // Retorna un stream vacío si no hay usuario
       return Stream.empty();
     }
 
     return _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('contacts')
         .where('status', isEqualTo: 'pending')
         .snapshots();
@@ -231,7 +231,7 @@ class UserDao {
   Future<void> updateContactUserName(Contact contact, String name) async {
     final userContactRef = _db
         .collection('users')
-        .doc(UserAuth.getCurrentUser().uid)
+        .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('contacts')
         .doc(contact.id);
     
@@ -242,5 +242,15 @@ class UserDao {
 
   void deleteNotification({required AppNotification notification}) {
     notification.docRef!.reference.delete();
+  }
+
+  Future<Contact> getContactById(String contactId) async {
+    final doc = await _db
+      .collection('users')
+      .doc(UserAuth.instance.getCurrentUser().uid)
+      .collection('contacts')
+      .doc(contactId)
+      .get();
+    return Contact.fromFirestore(doc);
   }
 }

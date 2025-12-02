@@ -27,7 +27,7 @@ class NotificationDao {
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getNotificationsCount() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
     // Escucha los cambios en la subcolección de notificaciones del usuario actual.

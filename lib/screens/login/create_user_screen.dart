@@ -44,7 +44,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
         password: _passwordController.text,
       );
 
-      UserAuth.sendEmailVerification(userCredential);
+      UserAuth.instance.sendEmailVerification(userCredential);
       UserDao().createUser(userCredential.user!.uid, _emailController.text, '');
       FirebaseAuth.instance.signOut();
       

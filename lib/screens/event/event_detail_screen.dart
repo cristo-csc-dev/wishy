@@ -322,7 +322,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => ListDetailScreen(userId: UserAuth.getCurrentUser().uid, wishList: list, isForGifting: true), // Se puede ver la lista del evento para regalar
+                        builder: (context) => ListDetailScreen(userId: UserAuth.instance.getCurrentUser().uid, wishList: list, isForGifting: true), // Se puede ver la lista del evento para regalar
                       ));
                     },
                   ),

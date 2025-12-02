@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
@@ -63,10 +64,11 @@ class ContactsListScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: InkWell(
                 onTap: () {
+                  context.go('/contacts/${contact.id}');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FriendListsOverviewScreen(contact: contact),
+                      builder: (context) => FriendListsOverviewScreen(contactId: contact.id),
                     ),
                   );
                 },
@@ -116,7 +118,7 @@ class ContactsListScreen extends StatelessWidget {
     // antes de que esta pantalla se cargue para que FirebaseAuth.instance.currentUser no sea null.
     
     // Si el usuario no está autenticado, mostramos un mensaje de error o solicitamos el login.
-    if (!UserAuth.isUserAuthenticatedAndVerified()) {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Mis Contactos'),

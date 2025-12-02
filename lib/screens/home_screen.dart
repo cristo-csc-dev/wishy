@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/notification_dao.dart';
@@ -142,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _fetchPendingRequestsCount() {
-    if (UserAuth.isUserAuthenticatedAndVerified()) {
+    if (UserAuth.instance.isUserAuthenticatedAndVerified()) {
       _notificationCountSubscription =
       NotificationDao().getNotificationsCount().listen((QuerySnapshot snapshot) {
         if (mounted) { // 3. Opcional, pero buena práctica: comprobar 'mounted' antes de setState
@@ -255,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ListDetailScreen(userId: UserAuth.getCurrentUser().uid,wishList: list),
+                    builder: (context) => ListDetailScreen(userId: UserAuth.instance.getCurrentUser().uid,wishList: list),
                   ),
                 );
                 // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
@@ -408,7 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FriendListsOverviewScreen(contact: contact),
+                      builder: (context) => FriendListsOverviewScreen(contactId: contact.id),
                     ),
                   );
                 },
@@ -482,11 +483,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   void _signOut() async {
-    await FirebaseAuth.instance.signOut();
+    UserAuth.instance.signOut();
     // Después de cerrar sesión, el StreamBuilder en main.dart detectará el cambio
     // y navegará automáticamente a la pantalla de autenticación.
     // Simplemente cierra la pantalla de perfil.
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    //Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _handleMethodCalls(MethodCall call) async {
@@ -554,14 +555,15 @@ class _HomeScreenState extends State<HomeScreen> {
             title: const Text('Contactos'),
             onTap: () {
               // Cierra el drawer
-              Navigator.pop(context);
+              context.pop(context);
               // Navega a la pantalla de perfil
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ContactsListScreen(),
-                ),
-              );
+              context.go('/contacts');
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (context) => const ContactsListScreen(),
+              //   ),
+              // );
             },
           ),
           const Divider(),
