@@ -8,9 +8,9 @@ class WishItem {
   String? suggestedStore;
   String? notes;
   String? imageUrl;
-  int priority; // 1 (low) to 5 (high) or custom enum
-  bool isBought; // Para el creador: si alguien lo ha comprado.
-  String? boughtById; // ID del contacto que lo marcó (opcional, para el creador)
+  int priority;
+  bool isBought;
+  String? boughtById;
 
   WishItem({
     required this.id,
@@ -20,7 +20,7 @@ class WishItem {
     this.suggestedStore,
     this.notes,
     this.imageUrl,
-    this.priority = 3, // Default to medium
+    this.priority = 3,
     this.isBought = false,
     this.boughtById,
   });

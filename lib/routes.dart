@@ -1,12 +1,19 @@
 import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/screens/contacts/contact_list_screen.dart';
+import 'package:wishy/screens/contacts/create_contact_request_screen.dart';
+import 'package:wishy/screens/contacts/edit_contact_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 import 'package:wishy/screens/home_screen.dart';
+import 'package:wishy/screens/login/create_user_screen.dart';
 import 'package:wishy/screens/login/login_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
+import 'package:wishy/screens/wish/add_wish_screen.dart';
+import 'package:wishy/screens/wish/create_edit_list_screen.dart';
+import 'package:wishy/screens/wish/list_detail_screen.dart';
+import 'package:wishy/screens/wish/wish_detail_screen.dart';
 
- GoRouter getRouter(UserAuth userAuth) => GoRouter(
+GoRouter getRouter(UserAuth userAuth) => GoRouter(
 
   initialLocation: '/',
   refreshListenable: userAuth, // URL por defecto al abrir la app
@@ -21,45 +28,120 @@ import 'package:wishy/screens/user/user_profile_screen.dart';
 
     // CASO 2: Ya está logueado e intenta ir al login -> Mandar a Home
     if (isLoggedIn && isGoingToLogin) {
-      return '/';
+      return '/home';
     }
 
     // CASO 3: No hace falta redirección
     return null;
   },
   routes: [
-    // Ruta Raíz: http://midominio.com/
     GoRoute(
-      path: '/',
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    // Home
+    GoRoute(
+      path: '/home',
       builder: (context, state) => const HomeScreen(),
       routes: [
-        // Ruta Hija: http://midominio.com/profile
         GoRoute(
-          path: '/settings',
+          path: '/signup',
+          builder: (context, state) => const CreateUserScreen(),
+        ),
+
+        // Perfil de usuario
+        GoRoute(
+          path: '/profile',
           builder: (context, state) => const UserProfileScreen(),
         ),
 
+        // Contactos
         GoRoute(
           path: '/contacts',
           builder: (context, state) => const ContactsListScreen(),
           routes: [
             GoRoute(
+              path: '/add',
+              builder: (context, state) => const CreateContactRequestScreen(),
+            ),
+            GoRoute(
               path: '/:contactId',
               builder: (context, state) {
-                // Extraemos el parámetro de la URL
-                final contactId = state.pathParameters['contactId']; 
-                return FriendListsOverviewScreen(contactId: contactId!);
+                final contactId = state.pathParameters['contactId'] ?? '';
+                return FriendListsOverviewScreen(contactId: contactId);
               },
+              routes: [
+                GoRoute(
+                  path: '/edit',
+                  builder: (context, state) {
+                    final contactId = state.pathParameters['contactId'] ?? '';
+                    return EditContactScreen(contactId: contactId);
+                  },
+                ),
+                GoRoute(
+                  path: '/lists/:wishlistId',
+                  builder: (context, state) {
+                    final contactId = state.pathParameters['contactId'] ?? '';
+                    final wishlistId = state.pathParameters['wishlistId'] ?? '';
+                    return ListDetailScreen(userId: contactId, wishListId: wishlistId);
+                  },
+                ),
+                GoRoute(
+                  path: '/lists/:wishlistId/wishes/:wishId/detail',
+                  builder: (context, state) {
+                    final contactId = state.pathParameters['contactId'] ?? '';
+                    final wishlistId = state.pathParameters['wishlistId'] ?? '';
+                    final wishItem = state.pathParameters['wishId'] ?? '';
+                    return WishDetailScreen(userId: contactId, wishListId: wishlistId, wishItemId: wishItem);
+                  },
+                ),
+              ],
             ),
           ],
         ),
-      ]
+        // Listas de deseos
+        GoRoute(
+          path: '/wishlist/add',
+          builder: (context, state) => const CreateEditListScreen(),
+        ),
+        GoRoute(
+          path: '/wishlist/:wishlistId',
+          builder: (context, state) {
+            final wishListId = state.pathParameters['wishlistId'] ?? '';
+            return ListDetailScreen(
+              wishListId: wishListId,
+              userId: UserAuth.instance.getCurrentUser().uid,
+            );
+          },
+          routes: [
+            GoRoute(
+              path: '/edit',
+              builder: (context, state) {
+                final wishListId = state.pathParameters['wishlistId'] ?? '';
+                return CreateEditListScreen(wishListId: wishListId);
+              },
+            ),
+            GoRoute(
+              path: '/wish/add',
+              builder: (context, state) {
+                final wishListId = state.pathParameters['wishlistId'] ?? '';
+                return AddWishScreen(wishListId: wishListId);
+              },
+            ),
+            GoRoute(
+              path: '/wish/:wishId/edit',
+              builder: (context, state) {
+                final wishListId = state.pathParameters['wishlistId'] ?? '';
+                final wishId = state.pathParameters['wishId'] ?? '';
+                return AddWishScreen(
+                  wishItemId: wishId,
+                  wishListId: wishListId,
+                );
+              },
+            ),
+          ]
+        ),
+      ],
     ),
-
-     GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    
   ],
 );

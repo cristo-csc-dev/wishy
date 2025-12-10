@@ -1,5 +1,4 @@
-  // Modelo de datos para una solicitud de contacto
-  import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ContactRequest {
     final String id;

@@ -1,4 +1,3 @@
-// models/group.dart
 class Group {
   final String id;
   final String name;

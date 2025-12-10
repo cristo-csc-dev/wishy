@@ -212,6 +212,7 @@ exports.recomputeSharedWithMeOnWishlistsChange = functions.firestore
  * @return {void}
  */
 async function recomputeSharedWithMe(userId) {
+  functions.logger.info("function recomputeSharedWithMe");
   const previousSnap = await admin
       .firestore()
       .collection("users")
@@ -221,6 +222,10 @@ async function recomputeSharedWithMe(userId) {
   const previousSharedWithMeIds =
       new Set(previousSnap.docs.map((doc) => doc.id));
 
+  functions.logger.info(
+      `Previous sharedWithMe IDs for user ${userId}: `,
+      Array.from(previousSharedWithMeIds),
+  );
   const contactsRef = admin
       .firestore()
       .collection("users")
@@ -228,6 +233,10 @@ async function recomputeSharedWithMe(userId) {
       .collection("contacts")
       .where("status", "==", "accepted");
   const contactsSnap = await contactsRef.get();
+  functions.logger.info(
+      `User ${userId} has ${contactsSnap.size} contacts:`,
+      contactsSnap.docs,
+  );
 
   if (contactsSnap.empty) {
     await admin
@@ -252,6 +261,7 @@ async function recomputeSharedWithMe(userId) {
     // Consulta las wishlists del contacto que estén compartidas con userId
     const wlSnap = await admin
         .firestore()
+        .collection("users")
         .doc(contactId)
         .collection("wishlists")
         .where("sharedWithContactIds", "array-contains", userId)

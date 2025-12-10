@@ -17,12 +17,9 @@ import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
-import 'package:wishy/screens/contacts/contact_list_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
-import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
-import 'package:wishy/screens/user/user_profile_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
 import 'package:wishy/models/event.dart'; // ¡NUEVO!
 import 'package:wishy/screens/event/event_detail_screen.dart'; // ¡NUEVO!
@@ -49,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchPendingRequestsCount();
+    _fetchNotificationsCount();
     platform.setMethodCallHandler(_handleMethodCalls);
   }
 
@@ -125,16 +122,10 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: (_selectedIndex == 0)? FloatingActionButton(
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateEditListScreen()),
-          );
-          if (result != null && result is WishList) {
-            setState(() {
-              //userWishLists.add(result);
-            });
+          final newListName = await context.push('/wishlist/add'); // Volver a Home después de crear la lista
+          if(context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Lista "${result.name}" creada.')));
+                SnackBar(content: Text('Lista "$newListName" creada.')));
           }
         },
         child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico
@@ -142,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _fetchPendingRequestsCount() {
+  void _fetchNotificationsCount() {
     if (UserAuth.instance.isUserAuthenticatedAndVerified()) {
       _notificationCountSubscription =
       NotificationDao().getNotificationsCount().listen((QuerySnapshot snapshot) {
@@ -152,7 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       }, onError: (error) {
-          // Manejo de errores
           if (mounted) {
               setState(() {
                    _pendingRequestsCount = 0;
@@ -162,7 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Modificación en _buildSegmentedControl para 3 pestañas
   Widget _buildSegmentedControl() {
     return Container(
       padding: const EdgeInsets.all(8.0),
@@ -199,27 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        //   Expanded( // ¡NUEVA PESTAÑA!
-        //     child: InkWell(
-        //       onTap: () { setState(() { _selectedIndex = 2; }); },
-        //       child: Container(
-        //         padding: const EdgeInsets.symmetric(vertical: 12.0),
-        //         decoration: BoxDecoration(
-        //           color: _selectedIndex == 2 ? Colors.blueGrey.shade100 : Colors.transparent,
-        //           borderRadius: BorderRadius.circular(8),
-        //         ),
-        //         child: Center(
-        //           child: Text('Para Eventos', style: TextStyle(fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 2 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
-        //         ),
-        //       ),
-        //     ),
-        //   ),
         ],
       ),
     );
   }
-
-  // ... ( _buildMyListsView y _buildGiftListsContactsView permanecen igual ) ...
 
   // --- VISTA DE MIS LISTAS ---
   Widget _buildMyListsView() {
@@ -256,23 +228,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ListDetailScreen(userId: UserAuth.instance.getCurrentUser().uid,wishList: list),
+                    builder: (context) => ListDetailScreen(userId: UserAuth.instance.getCurrentUser().uid,wishListId: list.id!),
                   ),
                 );
                 // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
               },
               onEdit: () async {
-                final updatedList = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateEditListScreen(wishList: list),
-                  ),
-                );
-                // No necesitamos setState() aquí
-                if (updatedList != null && updatedList is WishList) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lista "${updatedList.name}" actualizada.')));
-                }
+                context.go('/home/wishlist/${list.id}/edit');
               },
               onShare: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -285,85 +247,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
-    );
-  }
-
-  // --- ¡NUEVA VISTA PARA EVENTOS! ---
-  Widget _buildEventsView() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: EventDao().getEventsSharedWithMe(), 
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text('No hay eventos en el horizonte. ¡Crea uno!'),
-          );
-        }
-
-        var userEvents = snapshot.data!.docs
-            .map((doc) => Event.fromFirestore(doc.id, doc))
-            .toList();
-
-        return ListView.builder(
-          itemCount: userEvents.length,
-          itemBuilder: (context, index) {
-            final event = userEvents[index];
-            // Aquí podrías usar un EventCard widget reutilizable
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: InkWell(
-                onTap: () async {
-                  // Navegar a la pantalla de detalle del evento
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EventDetailScreen(event: event),
-                    ),
-                  );
-                  setState(() {}); // Refrescar si hay cambios en el evento
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Fecha: ${event.eventDate.toIso8601String().split('T')[0]}',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                      Text(
-                        'Tipo: ${event.type.toString().split('.').last}',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Participantes: ${event.participantUserIds.length}'),
-                      // Miniaturas de los participantes (opcional)
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      }
     );
   }
 
@@ -484,10 +367,6 @@ class _HomeScreenState extends State<HomeScreen> {
   
   void _signOut() async {
     UserAuth.instance.signOut();
-    // Después de cerrar sesión, el StreamBuilder en main.dart detectará el cambio
-    // y navegará automáticamente a la pantalla de autenticación.
-    // Simplemente cierra la pantalla de perfil.
-    //Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _handleMethodCalls(MethodCall call) async {
@@ -497,22 +376,19 @@ class _HomeScreenState extends State<HomeScreen> {
       dev.log("Received shared text: $jsonData");
       WishItem wishDataItem = getWishItemFromMap(jsonData)!;
 
-      // Navegamos usando el contexto válido obtenido del GlobalKey
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => AddWishScreen(wishItem: wishDataItem),
+          builder: (context) => AddWishScreen(wishItemId: wishDataItem.id),
         ),
       );
     }
   }
 
-  // Widget para construir el panel lateral (Drawer)
   Widget _buildAppDrawer() {
     final user = _auth.currentUser;
 
     return Drawer(
       child: ListView(
-        // Elimina cualquier padding del ListView.
         padding: EdgeInsets.zero,
         children: <Widget>[
           UserAccountsDrawerHeader(
@@ -538,15 +414,7 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.edit, color: Colors.indigo),
             title: const Text('Perfil'),
             onTap: () {
-              // Cierra el drawer
-              Navigator.pop(context);
-              // Navega a la pantalla de perfil
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              );
+              context.go('/home/profile');
             },
           ),
           const Divider(),
@@ -554,16 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.people, color: Colors.indigo),
             title: const Text('Contactos'),
             onTap: () {
-              // Cierra el drawer
-              context.pop(context);
-              // Navega a la pantalla de perfil
-              context.go('/contacts');
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (context) => const ContactsListScreen(),
-              //   ),
-              // );
+              context.go('/home/contacts');
             },
           ),
           const Divider(),
@@ -571,13 +430,10 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Salir'),
             onTap: () {
-              // Cierra el drawer
               Navigator.pop(context);
-              // Llama a la función para cerrar sesión
               _signOut();
             },
           ),
-          // Puedes añadir más ListTiles aquí para futuras opciones de menú.
         ],
       ),
     );
@@ -585,7 +441,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    // 4. CANCELAR la suscripción para evitar el error
     _notificationCountSubscription?.cancel(); 
     super.dispose();
   }

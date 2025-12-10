@@ -50,7 +50,6 @@ class AppNotification {
       senderUserId: data['senderUserId'],
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       isRead: data['isRead'] as bool? ?? false,
-      //contactRef: data['ref'] as DocumentReference?,
       docRef: doc,
     );
   }

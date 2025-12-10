@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/models/wish_list.dart';
@@ -30,13 +32,7 @@ class WishCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: InkWell(
         onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => WishDetailScreen(wishItem: wishItem, wishList: wishList,),
-            ),
-          );
-          // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
+          context.go('/home/contacts/${wishList.ownerId}/lists/${wishList.id}/wishes/${wishItem.id}/detail');
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -113,7 +109,7 @@ class WishCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (!isForGifting)
+                  if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid)
                     PopupMenuButton<String>(
                       onSelected: (value) {
                         if (value == 'edit') onEdit?.call();

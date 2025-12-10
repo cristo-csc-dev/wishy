@@ -143,15 +143,32 @@ class WishlistDao {
       .set(map, SetOptions(merge: true));
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getWishlistById(String id) async {
+  Future<DocumentSnapshot<Map<String, dynamic>>> getContactWishlistById(String wishListId, String? userId) async {
     if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
+    String userIdToUse = userId ?? UserAuth.instance.getCurrentUser().uid;
     return await _db
       .collection('users')
-      .doc(UserAuth.instance.getCurrentUser().uid)
+      .doc(userIdToUse)
       .collection('wishlists')
-      .doc(id)
+      .doc(wishListId)
+      .get();
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getWishlistById(String wishListId) async {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
+      throw Exception('Usuario no autenticado.');
+    }
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
+      throw Exception('Usuario no autenticado.');
+    }
+    String userIdToUse = UserAuth.instance.getCurrentUser().uid;
+    return await _db
+      .collection('users')
+      .doc(userIdToUse)
+      .collection('wishlists')
+      .doc(wishListId)
       .get();
   }
 

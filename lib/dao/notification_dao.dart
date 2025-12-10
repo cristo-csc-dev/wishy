@@ -14,7 +14,6 @@ class NotificationDao {
       return Stream.value([]);
     }
 
-    // Escucha los cambios en la subcolección de notificaciones del usuario actual.
     return _db
         .collection('users')
         .doc(uid)
@@ -30,7 +29,6 @@ class NotificationDao {
     if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
-    // Escucha los cambios en la subcolección de notificaciones del usuario actual.
     return _db.collection('users')
       .doc(uid)
       .collection('notifications').snapshots();

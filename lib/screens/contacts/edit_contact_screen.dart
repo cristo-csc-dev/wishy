@@ -1,13 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
 
 class EditContactScreen extends StatefulWidget {
 
-  final Contact contact;
+  final String contactId;
 
-  const EditContactScreen({super.key, required this.contact});
+  const EditContactScreen({super.key, required this.contactId});
 
   @override
   State<EditContactScreen> createState() => _EditContactScreenState();
@@ -20,16 +21,29 @@ class _EditContactScreenState extends State<EditContactScreen> {
   final _photoUrlController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
+  Contact? _contact;
 
   @override
   void initState() {
     super.initState();
+    _getContact();
     final user = _auth.currentUser;
     if (user != null) {
-      _displayNameController.text = widget.contact.name ?? '';
-      _displayEmailController.text = widget.contact.email;
+      _displayNameController.text = _contact?.name ?? '';
+      _displayEmailController.text = _contact?.email?? '';
       _photoUrlController.text = user.photoURL ?? '';
     }
+  }
+
+  void _getContact() async {
+    setState(() {
+      _isLoading = true;
+    });
+    Contact contact = await UserDao().getContactById(widget.contactId);
+    setState(() {
+      _contact = contact;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -45,11 +59,11 @@ class _EditContactScreenState extends State<EditContactScreen> {
         _isLoading = true;
       });
 
-      final user = _auth.currentUser;
-      if (user != null) {
+      final user = UserAuth.instance.getCurrentUser();
+      if (_contact != null) {
         try {
           await user.updateDisplayName(_displayNameController.text.trim());
-          await UserDao().updateContactUserName(widget.contact, _displayNameController.text.trim());
+          await UserDao().updateContactUserName(_contact!, _displayNameController.text.trim());
           // await user.updateEmail(_displayEmailController.text.trim());
           await user.updatePhotoURL(_photoUrlController.text.trim());
 

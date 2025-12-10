@@ -7,13 +7,13 @@ import 'package:uuid/uuid.dart';
 import 'package:wishy/models/wish_list.dart';
 
 class AddWishScreen extends StatefulWidget {
-  final WishItem? wishItem;
-  final WishList? wishList;
+  final String? wishItemId;
+  final String? wishListId;
 
   const AddWishScreen({
     super.key,
-    this.wishItem,
-    this.wishList,
+    this.wishItemId,
+    this.wishListId,
   });
 
   @override
@@ -31,19 +31,39 @@ class _AddWishScreenState extends State<AddWishScreen> {
   int _selectedPriority = 3; // Default medium priority
   final Set<String> _selectedWishlistIds = {};
 
+  bool _isLoading = false;
+  WishItem? _wishItem;
+  WishList? _wishList;
+
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.wishItem?.name ?? '');
+    _loadListAndWish();
+    _nameController = TextEditingController(text: _wishItem?.name ?? '');
     _urlController =
-        TextEditingController(text: widget.wishItem?.productUrl ?? '');
+        TextEditingController(text: _wishItem?.productUrl ?? '');
     _priceController = TextEditingController(
-        text: widget.wishItem?.estimatedPrice?.toString() ?? '');
+        text: _wishItem?.estimatedPrice?.toString() ?? '');
     _storeController =
-        TextEditingController(text: widget.wishItem?.suggestedStore ?? '');
-    _notesController = TextEditingController(text: widget.wishItem?.notes ?? '');
+        TextEditingController(text: _wishItem?.suggestedStore ?? '');
+    _notesController = TextEditingController(text: _wishItem?.notes ?? '');
     _newListController = TextEditingController();
-    _selectedPriority = widget.wishItem?.priority ?? 3;
+    _selectedPriority = _wishItem?.priority ?? 3;
+  }
+
+  void _loadListAndWish() async {
+    setState(() {
+      _isLoading = true;
+    });
+    if(widget.wishListId != null) {
+      var wishListSnapshot = await WishlistDao().getWishlistById(widget.wishListId!);
+      var wishItem = await wishListSnapshot.reference.collection("items").doc(widget.wishItemId).get();
+      setState(() {
+        _wishList = WishList.fromFirestore(wishListSnapshot);
+        _wishItem = WishItem.fromFirestore(wishItem);
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -74,8 +94,8 @@ class _AddWishScreenState extends State<AddWishScreen> {
 
     final newListName = _newListController.text.trim();
     // If we are not editing and not adding to a specific list, we must select at least one list or create a new one.
-    if (widget.wishItem == null &&
-        widget.wishList == null &&
+    if (_wishItem == null &&
+        _wishList == null &&
         _selectedWishlistIds.isEmpty &&
         newListName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +112,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
     if (user == null || !user.emailVerified) return;
 
     final wishItem = WishItem(
-      id: widget.wishItem?.id ?? const Uuid().v4(),
+      id: _wishItem?.id ?? const Uuid().v4(),
       name: _nameController.text,
       productUrl: _urlController.text,
       estimatedPrice: double.tryParse(_priceController.text),
@@ -118,9 +138,9 @@ class _AddWishScreenState extends State<AddWishScreen> {
       }
 
       // If we are editing an existing wish
-      if (widget.wishItem != null && widget.wishList != null && widget.wishList!.id != null) {
+      if (_wishItem != null && _wishList != null && _wishList!.id != null) {
         await wishlistDao.updateItem(
-            widget.wishList!.id!, wishItem.id, wishItem.toMap());
+            _wishList!.id!, wishItem.id, wishItem.toMap());
       } else {
         // Adding a new wish to one or more lists
         final allFutures = <Future>[];
@@ -128,8 +148,8 @@ class _AddWishScreenState extends State<AddWishScreen> {
         if (newWishlistId != null) {
           allListIds.add(newWishlistId);
         }
-        if(widget.wishList != null && widget.wishList!.id != null) {
-          allListIds.add(widget.wishList!.id!);
+        if(_wishList != null && _wishList!.id != null) {
+          allListIds.add(_wishList!.id!);
         }
         for (final listId in allListIds) {
           allFutures.add(wishlistDao.addItem(listId, wishItem.toMap()));
@@ -139,7 +159,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.wishItem == null
+          content: Text(_wishItem == null
               ? 'Deseo añadido con éxito'
               : 'Deseo actualizado con éxito'),
           backgroundColor: Colors.green,
@@ -164,7 +184,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.wishItem == null ? 'Añadir Deseo' : 'Editar Deseo'),
+        title: Text(_wishItem == null ? 'Añadir Deseo' : 'Editar Deseo'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -172,7 +192,14 @@ class _AddWishScreenState extends State<AddWishScreen> {
           ),
         ],
       ),
-      body: Form(
+      body: _isLoading
+      ? Container(
+          color: Colors.black.withOpacity(0.5),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        )      
+      : Form(
         key: _formKey,
         child: CustomScrollView(
           slivers: [
@@ -260,7 +287,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
                         Text('Imprescindible'),
                       ],
                     ),
-                    if (widget.wishList == null) ...[
+                    if (_wishList == null) ...[
                       const SizedBox(height: 24),
                       const Divider(),
                       const SizedBox(height: 16),
@@ -274,7 +301,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
                 ),
               ),
             ),
-            if (widget.wishList == null)
+            if (_wishList == null)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 sliver: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
