@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/screens/contacts/contact_list_screen.dart';
@@ -7,11 +8,22 @@ import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 import 'package:wishy/screens/home_screen.dart';
 import 'package:wishy/screens/login/create_user_screen.dart';
 import 'package:wishy/screens/login/login_screen.dart';
+import 'package:wishy/screens/under_construction/under_construction_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/screens/wish/wish_detail_screen.dart';
+import 'package:wishy/utils/platform_type.dart';
+
+
+const invitationUids = [
+  'e4a7a2a0-42b8-4c71-8e27-add3f0c9b495',
+  '3d3f8f6a-8b4c-4a1b-9c1d-1e1f2a3b4c5d',
+  'a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6',
+  'f8c3c2e0-6c3a-4b1d-8e6b-8c6f2b8a9f3e',
+  'b9e8f7d6-c5b4-4a3b-2a1c-0e9d8c7b6a5f'
+];
 
 GoRouter getRouter(UserAuth userAuth) => GoRouter(
 
@@ -20,6 +32,16 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
   redirect: (context, state) {
     final isLoggedIn = userAuth.isAuthenticated;
     final isGoingToLogin = state.uri.toString() == '/login';
+
+    if(!isLoggedIn && 
+      PlatformHelper.currentPlatformType == PlatformType.web &&
+      !(invitationUids.contains(state.uri.queryParameters['invitationUid']))) {
+      return '/underConstruction';
+    }
+
+    if(!isLoggedIn && isGoingToLogin) {
+      return null; // Permitir ir al login si no está logueado
+    } 
 
     // CASO 1: No está logueado y no está en el login -> Mandar a Login
     if (!isLoggedIn && !isGoingToLogin) {
@@ -142,6 +164,12 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
           ]
         ),
       ],
+    ),
+    GoRoute(
+      path: '/underConstruction',
+      builder: (context, state) {
+        return const UnderConstructionPage();
+      }
     ),
   ],
 );
