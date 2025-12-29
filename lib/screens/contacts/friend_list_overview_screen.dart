@@ -43,11 +43,22 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = _contact?.name ?? _contact?.email ?? 'Contacto';
+    final displayName = _contact?.displayName ?? 'Contacto';
     
     return Scaffold(
       appBar: AppBar(
         title: Text('Listas de $displayName'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              if (_contact != null) {
+                context.go('/home/contacts/${_contact!.id}/edit');
+              }
+            },
+            icon: const Icon(Icons.edit),
+            tooltip: 'Editar contacto',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -60,7 +71,7 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
                   backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   radius: 40,
                   child: Text(
-                    _contact?.name?? '',
+                    displayName.isNotEmpty ? displayName[0] : '',
                     style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
                   ),
                 ),

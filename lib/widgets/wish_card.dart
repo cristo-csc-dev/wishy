@@ -4,9 +4,9 @@ import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/models/wish_list.dart';
-import 'package:wishy/screens/wish/wish_detail_screen.dart';
+import 'package:wishy/dao/wish_list_dao.dart';
 
-class WishCard extends StatelessWidget {
+class WishCard extends StatefulWidget {
   final WishItem wishItem;
   final WishList wishList;
   final bool isForGifting; // Si esta tarjeta es para el regalador
@@ -25,7 +25,80 @@ class WishCard extends StatelessWidget {
   });
 
   @override
+  State<WishCard> createState() => _WishCardState();
+}
+
+class _WishCardState extends State<WishCard> {
+  late int _currentPriority;
+  bool _isUpdating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPriority = widget.wishItem.priority;
+  }
+
+  bool get _isOwner => widget.wishList.ownerId == UserAuth.instance.getCurrentUser().uid;
+
+  Future<void> _setPriority(int newPriority) async {
+    if (!_isOwner) return;
+    final oldPriority = _currentPriority;
+    setState(() {
+      _currentPriority = newPriority;
+      _isUpdating = true;
+    });
+
+    final wishlistId = widget.wishList.id ?? '';
+    if (wishlistId.isEmpty) {
+      setState(() {
+        _currentPriority = oldPriority;
+        _isUpdating = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lista inválida')));
+      return;
+    }
+
+    try {
+      await WishlistDao().updateItem(wishlistId, widget.wishItem.id, {'priority': newPriority});
+    } catch (e) {
+      setState(() {
+        _currentPriority = oldPriority;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al actualizar prioridad: $e')));
+    } finally {
+      setState(() {
+        _isUpdating = false;
+      });
+    }
+  }
+
+  Widget _buildPriorityStars() {
+    // Mostrar fila de 5 estrellas; si no es owner, deshabilitadas
+    final Color starColor = Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.primary;
+    return Row(
+      children: List.generate(5, (index) {
+        final starIndex = index + 1;
+        final filled = starIndex <= _currentPriority;
+        return IconButton(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          onPressed: _isOwner && !_isUpdating ? () => _setPriority(starIndex) : null,
+          icon: Icon(
+            filled ? Icons.star : Icons.star_border,
+            color: starColor,
+            size: 18,
+          ),
+          tooltip: _isOwner ? 'Cambiar prioridad' : null,
+        );
+      }),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final wishItem = widget.wishItem;
+    final wishList = widget.wishList;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       elevation: 1,
@@ -79,9 +152,12 @@ class WishCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        // Prioridad (estrellas) antes del precio
+                        _buildPriorityStars(),
+                        const SizedBox(height: 4),
                         if (wishItem.estimatedPrice != null)
                           Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
+                            padding: const EdgeInsets.only(top: 2.0),
                             child: Text(
                               '${wishItem.estimatedPrice!.toStringAsFixed(2)}€',
                               style: const TextStyle(
@@ -112,8 +188,8 @@ class WishCard extends StatelessWidget {
                   if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid)
                     PopupMenuButton<String>(
                       onSelected: (value) {
-                        if (value == 'edit') onEdit?.call();
-                        if (value == 'delete') onDelete?.call();
+                        if (value == 'edit') widget.onEdit?.call();
+                        if (value == 'delete') widget.onDelete?.call();
                       },
                       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                         const PopupMenuItem<String>(
@@ -151,6 +227,7 @@ class WishCard extends StatelessWidget {
                     ),
                 ],
               ),
+
             ],
           ),
         ),

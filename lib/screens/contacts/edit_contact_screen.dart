@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
 
@@ -18,7 +17,6 @@ class _EditContactScreenState extends State<EditContactScreen> {
   final _formKey = GlobalKey<FormState>();
   final _displayNameController = TextEditingController();
   final _displayEmailController = TextEditingController();
-  final _photoUrlController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
   Contact? _contact;
@@ -27,29 +25,36 @@ class _EditContactScreenState extends State<EditContactScreen> {
   void initState() {
     super.initState();
     _getContact();
-    final user = _auth.currentUser;
-    if (user != null) {
-      _displayNameController.text = _contact?.name ?? '';
-      _displayEmailController.text = _contact?.email?? '';
-      _photoUrlController.text = user.photoURL ?? '';
-    }
   }
 
   void _getContact() async {
     setState(() {
       _isLoading = true;
     });
-    Contact contact = await UserDao().getContactById(widget.contactId);
-    setState(() {
-      _contact = contact;
-      _isLoading = false;
-    });
+    try {
+      Contact contact = await UserDao().getContactById(widget.contactId);
+      setState(() {
+        _contact = contact;
+        _displayNameController.text = contact.name ?? '';
+        _displayEmailController.text = contact.email;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo cargar el contacto.')),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
     _displayNameController.dispose();
-    _photoUrlController.dispose();
+    _displayEmailController.dispose();
     super.dispose();
   }
 
@@ -59,24 +64,20 @@ class _EditContactScreenState extends State<EditContactScreen> {
         _isLoading = true;
       });
 
-      final user = UserAuth.instance.getCurrentUser();
       if (_contact != null) {
         try {
-          await user.updateDisplayName(_displayNameController.text.trim());
           await UserDao().updateContactUserName(_contact!, _displayNameController.text.trim());
-          // await user.updateEmail(_displayEmailController.text.trim());
-          await user.updatePhotoURL(_photoUrlController.text.trim());
-
+         
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Perfil actualizado con éxito')),
+              const SnackBar(content: Text('Contacto actualizado con éxito')),
             );
             Navigator.of(context).pop();
           }
-        } on FirebaseAuthException catch (e) {
+        } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error al actualizar el perfil: ${e.message}')),
+              SnackBar(content: Text('Error al actualizar el contacto: $e')),
             );
           }
         } finally {
@@ -110,10 +111,10 @@ class _EditContactScreenState extends State<EditContactScreen> {
               Center(
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
-                      ? NetworkImage(user.photoURL!)
+                  backgroundImage: _contact?.avatarUrl != null && _contact!.avatarUrl!.isNotEmpty
+                      ? NetworkImage(_contact!.avatarUrl!)
                       : null,
-                  child: user.photoURL == null || user.photoURL!.isEmpty
+                  child: _contact?.avatarUrl == null || _contact!.avatarUrl!.isEmpty
                       ? const Icon(Icons.person, size: 50)
                       : null,
                 ),
@@ -136,7 +137,7 @@ class _EditContactScreenState extends State<EditContactScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              // Campo para el nombre de visualización
+              // Campo para el email (solo lectura)
               TextFormField(
                 controller: _displayEmailController,
                 enabled: false,
@@ -148,22 +149,11 @@ class _EditContactScreenState extends State<EditContactScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, ingresa tu nombre';
+                    return 'Por favor, ingresa un email';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
-              // Campo para la URL de la foto
-              // TextFormField(
-              //   controller: _photoUrlController,
-              //   decoration: InputDecoration(
-              //     labelText: 'URL de la foto de perfil (opcional)',
-              //     border: OutlineInputBorder(
-              //       borderRadius: BorderRadius.circular(12),
-              //     ),
-              //   ),
-              // ),
               const SizedBox(height: 20),
               // Botón de guardar
               SizedBox(

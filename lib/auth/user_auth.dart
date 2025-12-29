@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:wishy/services/contacts_manager.dart';
 
 class UserAuth extends ChangeNotifier {
 
@@ -66,6 +67,8 @@ class UserAuth extends ChangeNotifier {
   void signOut() async {
     await FirebaseAuth.instance.signOut();
     _isAuthenticated = false;
+    // Limpiar cache de contactos al cerrar sesión
+    ContactsManager.instance.clear();
     notifyListeners();
   }
 }

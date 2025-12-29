@@ -227,9 +227,23 @@ class UserDao {
         .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('contacts')
         .doc(contact.id);
+
+    final resolvedName = name.trim().isNotEmpty ? name.trim() : (contact.name ?? '');
+
+    await userContactRef.update({
+      'contactName': resolvedName,
+    });
+  }
+
+  Future<void> updateContactAvatar(Contact contact, String avatarUrl) async {
+    final userContactRef = _db
+        .collection('users')
+        .doc(UserAuth.instance.getCurrentUser().uid)
+        .collection('contacts')
+        .doc(contact.id);
     
     await userContactRef.update({
-      'name': name,
+      'avatarUrl': avatarUrl,
     });
   }
 

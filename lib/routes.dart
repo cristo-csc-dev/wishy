@@ -33,11 +33,11 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
     final isLoggedIn = userAuth.isAuthenticated;
     final isGoingToLogin = state.uri.toString() == '/login';
 
-    if(!isLoggedIn && 
-      PlatformHelper.currentPlatformType == PlatformType.web &&
-      !(invitationUids.contains(state.uri.queryParameters['invitationUid']))) {
-      return '/underConstruction';
-    }
+    // if(!isLoggedIn && 
+    //   PlatformHelper.currentPlatformType == PlatformType.web &&
+    //   !(invitationUids.contains(state.uri.queryParameters['invitationUid']))) {
+    //   return '/underConstruction';
+    // }
 
     if(!isLoggedIn && isGoingToLogin) {
       return null; // Permitir ir al login si no está logueado
@@ -107,15 +107,17 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
                     final wishlistId = state.pathParameters['wishlistId'] ?? '';
                     return ListDetailScreen(userId: contactId, wishListId: wishlistId);
                   },
-                ),
-                GoRoute(
-                  path: '/lists/:wishlistId/wishes/:wishId/detail',
-                  builder: (context, state) {
-                    final contactId = state.pathParameters['contactId'] ?? '';
-                    final wishlistId = state.pathParameters['wishlistId'] ?? '';
-                    final wishItem = state.pathParameters['wishId'] ?? '';
-                    return WishDetailScreen(userId: contactId, wishListId: wishlistId, wishItemId: wishItem);
-                  },
+                  routes: [
+                    GoRoute(
+                      path: '/wishes/:wishId/detail',
+                      builder: (context, state) {
+                        final contactId = state.pathParameters['contactId'] ?? '';
+                        final wishlistId = state.pathParameters['wishlistId'] ?? '';
+                        final wishItem = state.pathParameters['wishId'] ?? '';
+                        return WishDetailScreen(userId: contactId, wishListId: wishlistId, wishItemId: wishItem);
+                      },
+                    ),
+                  ]
                 ),
               ],
             ),

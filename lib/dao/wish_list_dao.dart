@@ -78,7 +78,11 @@ class WishlistDao {
           .collection('wishlists').doc(wishlistId);
         CollectionReference itemsRef = wishlistRef.collection('items');
 
-        await itemsRef.add(itemData);
+        // Añadimos timestamp para poder ordenar por fecha añadida
+        final dataWithTimestamp = Map<String, dynamic>.from(itemData);
+        dataWithTimestamp['createdAt'] = FieldValue.serverTimestamp();
+
+        await itemsRef.add(dataWithTimestamp);
         int itemCount = (await itemsRef.count().get()).count ?? 0;
 
         transaction.update(wishlistRef, {'itemCount': itemCount});
@@ -184,17 +188,23 @@ class WishlistDao {
       .delete();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(String userId, WishList currentWishList) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(String userId, WishList currentWishList, {String? orderByField, bool descending = true}) {
     if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
-    return _db
+
+    final collectionRef = _db
       .collection('users')
       .doc(userId)
       .collection('wishlists')
       .doc(currentWishList.id)
-      .collection('items')
-      .snapshots();
+      .collection('items');
+
+    if (orderByField != null && orderByField.isNotEmpty) {
+      return collectionRef.orderBy(orderByField, descending: descending).snapshots();
+    }
+
+    return collectionRef.snapshots();
   }
 
 }

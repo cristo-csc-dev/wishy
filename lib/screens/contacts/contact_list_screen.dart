@@ -44,6 +44,7 @@ class ContactsListScreen extends StatelessWidget {
           itemCount: contactsWithSharedLists.length,
           itemBuilder: (context, index) {
             final contact = contactsWithSharedLists[index];
+            final displayName = (contact.contactName != null && contact.contactName!.isNotEmpty) ? contact.contactName! : (contact.name ?? contact.email);
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               elevation: 2,
@@ -63,14 +64,14 @@ class ContactsListScreen extends StatelessWidget {
                           CircleAvatar(
                             backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             child: Text(
-                              contact.name?? '',
+                              displayName.isNotEmpty ? displayName[0] : '',
                               style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
                             ),
                           ), // Usar un icono de la lista
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              contact.name?? contact.email,
+                              displayName,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -79,7 +80,9 @@ class ContactsListScreen extends StatelessWidget {
                             ),
                           ),
                           IconButton(
-                            onPressed: () {}, 
+                            onPressed: () {
+                              context.go('/home/contacts/${contact.id}/edit');
+                            }, 
                             icon: const Icon(Icons.edit)
                           ),
                         ],
