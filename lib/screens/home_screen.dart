@@ -303,14 +303,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           CircleAvatar(
                             backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             child: Text(
-                              contact.name?? '',
+                              (contact.contactName?? contact.name ?? contact.email).substring(0, 2),
                               style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
                             ),
                           ), // Usar un icono de la lista
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              contact.name?? contact.email,
+                              contact.contactName?? contact.name?? contact.email,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
