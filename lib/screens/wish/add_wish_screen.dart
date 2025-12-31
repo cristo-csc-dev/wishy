@@ -39,16 +39,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
   void initState() {
     super.initState();
     _loadListAndWish();
-    _nameController = TextEditingController(text: _wishItem?.name ?? '');
-    _urlController =
-        TextEditingController(text: _wishItem?.productUrl ?? '');
-    _priceController = TextEditingController(
-        text: _wishItem?.estimatedPrice?.toString() ?? '');
-    _storeController =
-        TextEditingController(text: _wishItem?.suggestedStore ?? '');
-    _notesController = TextEditingController(text: _wishItem?.notes ?? '');
-    _newListController = TextEditingController();
-    _selectedPriority = _wishItem?.priority ?? 3;
+    
   }
 
   void _loadListAndWish() async {
@@ -61,9 +52,23 @@ class _AddWishScreenState extends State<AddWishScreen> {
       setState(() {
         _wishList = WishList.fromFirestore(wishListSnapshot);
         _wishItem = WishItem.fromFirestore(wishItem);
+        fillForm();
         _isLoading = false;
       });
     }
+  }
+
+  void fillForm() {
+    _nameController = TextEditingController(text: _wishItem?.name ?? '');
+    _urlController =
+        TextEditingController(text: _wishItem?.productUrl ?? '');
+    _priceController = TextEditingController(
+        text: _wishItem?.estimatedPrice?.toString() ?? '');
+    _storeController =
+        TextEditingController(text: _wishItem?.suggestedStore ?? '');
+    _notesController = TextEditingController(text: _wishItem?.notes ?? '');
+    _newListController = TextEditingController();
+    _selectedPriority = _wishItem?.priority ?? 3;
   }
 
   @override

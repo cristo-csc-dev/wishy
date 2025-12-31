@@ -80,7 +80,7 @@ class _WishCardState extends State<WishCard> {
         final starIndex = index + 1;
         final filled = starIndex <= _currentPriority;
         return IconButton(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          padding: const EdgeInsets.symmetric(horizontal: 3.0),
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           onPressed: _isOwner && !_isUpdating ? () => _setPriority(starIndex) : null,
           icon: Icon(
@@ -105,7 +105,12 @@ class _WishCardState extends State<WishCard> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: InkWell(
         onTap: () async {
-          context.go('/home/contacts/${wishList.ownerId}/lists/${wishList.id}/wishes/${wishItem.id}/detail');
+          // Si la lista pertenece al usuario actual, usar la ruta de "mis listas"; si no, la de contactos
+          if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid) {
+            context.go('/home/wishlists/mine/${wishList.id}/wish/${wishItem.id}/detail');
+          } else {
+            context.go('/home/contacts/${wishList.ownerId}/lists/${wishList.id}/wishes/${wishItem.id}/detail');
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

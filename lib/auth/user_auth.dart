@@ -9,7 +9,20 @@ class UserAuth extends ChangeNotifier {
   static final UserAuth _instance = UserAuth._internal();
 
   // 2. Constructor privado para evitar que se creen más instancias por error
-  UserAuth._internal();
+  // Inicializa el estado a partir de FirebaseAuth y mantiene sincronizado
+  UserAuth._internal() {
+    // Estado inicial basado en si ya hay usuario persistido
+    _isAuthenticated = FirebaseAuth.instance.currentUser != null;
+
+    // Mantener el estado sincronizado y notificar a los listeners (ej. GoRouter)
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      final newVal = user != null;
+      if (_isAuthenticated != newVal) {
+        _isAuthenticated = newVal;
+        notifyListeners();
+      }
+    });
+  }
 
   // 3. Factory para que al llamar AuthService() siempre devuelva la misma instancia
   factory UserAuth() {

@@ -178,7 +178,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     Contact? contact = ContactsManager.instance.getById(widget.userId);
     return Scaffold(
       appBar: AppBar(
-        title: Text('${_currentWishList?.name ?? ""} creada por ${contact?.displayName ?? ""}'),
+        title: Text('"${_currentWishList?.name ?? ""}" ${contact != null? "creada por ${contact.displayName}" : ""}'),
       ),
       body: _isLoading
           ? Container(

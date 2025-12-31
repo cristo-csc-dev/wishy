@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: (_selectedIndex == 0)? FloatingActionButton(
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
-          final newListName = await context.push('/wishlist/add'); // Volver a Home después de crear la lista
+          final newListName = await context.push('/home/wishlists/mine/add'); // Volver a Home después de crear la lista
           if(context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Lista "$newListName" creada.')));
@@ -225,16 +225,11 @@ class _HomeScreenState extends State<HomeScreen> {
             return ListCard(
               wishList: list,
               onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ListDetailScreen(userId: UserAuth.instance.getCurrentUser().uid,wishListId: list.id!),
-                  ),
-                );
-                // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
+                // Navegar a la ruta de mis listas (nueva)
+                context.go('/home/wishlists/mine/${list.id}');
               },
               onEdit: () async {
-                context.go('/home/wishlist/${list.id}/edit');
+                context.go('/home/wishlists/mine/${list.id}/editFromList');
               },
               onShare: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -289,6 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: InkWell(
                 onTap: () {
+                  context.go('/home/contacts/${contact.id}');
                   Navigator.push(
                     context,
                     MaterialPageRoute(

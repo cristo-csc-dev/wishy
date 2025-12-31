@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart'; // Asegúrate de que este import sea correcto
@@ -154,10 +155,12 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
       appBar: AppBar(
         title: const Text('Detalle del Deseo'),
         actions: [
-          IconButton(
+          if (_wishList?.ownerId == UserAuth.instance.getCurrentUser().uid)
+            IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
-                context.go('/home/contacts/${widget.userId}/lists/${widget.wishListId}/wishes/${widget.wishItemId}/detail');
+                // Usamos la ruta de edición dentro de "mis listas"
+                context.go('/home/wishlists/mine/${widget.wishListId}/wish/${widget.wishItemId}/edit');
               },
             ),
         ],

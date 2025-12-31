@@ -66,6 +66,89 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  /// Envia un email de restablecimiento de contraseña usando Firebase
+  Future<void> _sendPasswordResetEmail(String email) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Se ha enviado un email de restablecimiento a $email. Revise su bandeja de entrada.'),
+        ));
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Error al enviar el email: ${e.message}';
+      if (e.code == 'user-not-found') {
+        message = 'No se encontró una cuenta con ese email.';
+      }
+      if (mounted) {
+        setState(() {
+          _errorMessage = message;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        final msg = 'Error al enviar el email: $e';
+        setState(() {
+          _errorMessage = msg;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Muestra un diálogo para introducir el email y enviar el email de restablecimiento
+  void _showForgotPasswordDialog() {
+    final controller = TextEditingController(text: _emailController.text);
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Recuperar contraseña'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'usuario@ejemplo.com',
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = controller.text.trim();
+                if (email.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Introduce un email válido.')));
+                  return;
+                }
+                Navigator.of(context).pop();
+                await _sendPasswordResetEmail(email);
+              },
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -127,6 +210,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 _showCreateUserScreen(context);
               },
               child: const Text('¿No tienes una cuenta? Crea una aquí'),
+            ),
+            // Enlace para recuperar contraseña
+            TextButton(
+              onPressed: _showForgotPasswordDialog,
+              child: const Text('¿Has olvidado tu contraseña?'),
             ),
             if (MessageUtils.hasMessage()) ...[Text(
               MessageUtils.getMessage(),

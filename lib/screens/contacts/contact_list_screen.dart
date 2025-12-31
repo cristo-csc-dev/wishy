@@ -81,7 +81,7 @@ class ContactsListScreen extends StatelessWidget {
                           ),
                           IconButton(
                             onPressed: () {
-                              context.go('/home/contacts/${contact.id}/edit');
+                              context.go('/home/contacts/${contact.id}/editFromList');
                             }, 
                             icon: const Icon(Icons.edit)
                           ),
