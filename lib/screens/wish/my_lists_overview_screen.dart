@@ -5,6 +5,8 @@ import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/widgets/list_card.dart';
+import 'package:wishy/screens/wish/add_wish_screen.dart';
+import 'package:wishy/models/wish_item.dart';
 
 class MyListsOverviewScreen extends StatefulWidget {
   const MyListsOverviewScreen({super.key});
@@ -61,6 +63,15 @@ class _MyListsOverviewScreenState extends State<MyListsOverviewScreen> {
                 onShare: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Compartir lista "${list.name}"')));
+                },
+                onAdd: () async {
+                  final newWish = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AddWishScreen(wishListId: list.id)),
+                  );
+                  if (newWish != null && newWish is WishItem) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));
+                  }
                 },
                 onDelete: () {
                   _showDeleteConfirmationDialog(list);

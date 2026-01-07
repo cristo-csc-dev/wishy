@@ -44,9 +44,6 @@ class WishItem {
       'priority': priority,
       'isBought': isBought,
       'boughtById': boughtById,
-      'isTaken': isTaken,
-      'claimedBy': claimedBy,
-      'claimedAt': claimedAt == null ? null : Timestamp.fromDate(claimedAt!),
     };
   }
 
@@ -65,9 +62,6 @@ class WishItem {
       priority: data['priority'] ?? 3,
       isBought: data['isBought'] ?? false,
       boughtById: data['boughtById'],
-      isTaken: data['isTaken'] ?? false,
-      claimedBy: data['claimedBy'],
-      claimedAt: data['claimedAt'] != null ? (data['claimedAt'] as Timestamp).toDate() : null,
     );
   }
 }

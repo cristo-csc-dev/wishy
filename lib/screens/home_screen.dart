@@ -264,12 +264,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       PopupMenuButton<String>(
-                        onSelected: (value) {
+                        onSelected: (value) async {
                           if (value == 'edit') {
                             context.go('/home/wishlists/mine/${list.id}/editFromList');
                           }
                           if (value == 'share') {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Compartir lista "${list.name}"')));
+                          }
+                          if (value == 'add') {
+                            final newWish = await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => AddWishScreen(wishListId: list.id)),
+                            );
+                            if (newWish != null && newWish is WishItem) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));
+                            }
                           }
                           if (value == 'delete') {
                             _showDeleteConfirmationDialog(list);
@@ -279,6 +288,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           const PopupMenuItem<String>(
                             value: 'edit',
                             child: Text('Editar'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'add',
+                            child: Text('Añadir deseo'),
                           ),
                           const PopupMenuItem<String>(
                             value: 'delete',

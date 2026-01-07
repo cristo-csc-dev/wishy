@@ -8,6 +8,7 @@ class ListCard extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onAdd; // Nueva opción para añadir un deseo directamente desde la tarjeta
 
   const ListCard({
     super.key,
@@ -16,6 +17,7 @@ class ListCard extends StatelessWidget {
     required this.onShare,
     required this.onEdit,
     required this.onDelete,
+    this.onAdd,
   });
 
   String _getPrivacyStatus() {
@@ -63,12 +65,17 @@ class ListCard extends StatelessWidget {
                       onSelected: (value) {
                         if (value == 'edit') onEdit();
                         if (value == 'share') onShare();
+                        if (value == 'add') onAdd?.call();
                         if (value == 'delete') onDelete();
                       },
                       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                         const PopupMenuItem<String>(
                           value: 'edit',
                           child: Text('Editar'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'add',
+                          child: Text('Añadir deseo'),
                         ),
                         // const PopupMenuItem<String>(
                         //   value: 'share',

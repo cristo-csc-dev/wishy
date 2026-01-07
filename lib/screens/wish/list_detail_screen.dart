@@ -199,6 +199,12 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       appBar: AppBar(
         title: Text('"${_currentWishList?.name ?? ""}" ${contact != null? "creada por ${contact.displayName}" : ""}'),
       ),
+      floatingActionButton: (_currentWishList != null && _currentWishList!.ownerId == UserAuth.instance.getCurrentUser().uid)
+        ? FloatingActionButton(
+            onPressed: _addWishItem,
+            child: const Icon(Icons.add),
+          )
+        : null,
       body: _isLoading
           ? Container(
               color: Colors.black.withOpacity(0.5),

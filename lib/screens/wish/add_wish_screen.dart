@@ -43,15 +43,23 @@ class _AddWishScreenState extends State<AddWishScreen> {
   }
 
   void _loadListAndWish() async {
+
+    WishList? wishList;
+    WishItem? wishItem;
+
     setState(() {
       _isLoading = true;
     });
     if(widget.wishListId != null) {
       var wishListSnapshot = await WishlistDao().getWishlistById(widget.wishListId!);
-      var wishItem = await wishListSnapshot.reference.collection("items").doc(widget.wishItemId).get();
+      wishList = WishList.fromFirestore(wishListSnapshot);
+      if(widget.wishItemId != null) {
+        var wishItemSnapshot = await wishListSnapshot.reference.collection("items").doc(widget.wishItemId).get();
+        wishItem = WishItem.fromFirestore(wishItemSnapshot);
+      }
       setState(() {
-        _wishList = WishList.fromFirestore(wishListSnapshot);
-        _wishItem = WishItem.fromFirestore(wishItem);
+        _wishList = wishList;
+        _wishItem = wishItem;
         fillForm();
         _isLoading = false;
       });
