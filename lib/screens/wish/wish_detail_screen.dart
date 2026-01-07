@@ -6,7 +6,6 @@ import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart'; // Asegúrate de que este import sea correcto
 import 'package:intl/intl.dart';
-import 'package:wishy/screens/wish/add_wish_screen.dart'; // Necesario para formatear la moneda
 
 class WishDetailScreen extends StatefulWidget {
   

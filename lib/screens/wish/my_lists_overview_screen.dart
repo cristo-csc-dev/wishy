@@ -17,6 +17,7 @@ class _MyListsOverviewScreenState extends State<MyListsOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final user = UserAuth.instance.getCurrentUser();
+    // ignore: unnecessary_null_comparison
     if (user == null || !user.emailVerified) {
       return Scaffold(
         appBar: AppBar(title: const Text('Mis Listas')),

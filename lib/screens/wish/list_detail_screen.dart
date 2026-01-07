@@ -27,6 +27,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
 
   WishList? _currentWishList;
   bool _isLoading = false;
+  String? _errorMessage;
 
   // Ordenación
   String? _orderByField = 'priority'; // default: ordenar por prioridad descendente (opciones: 'priority', 'name')
@@ -41,12 +42,30 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
   void _getWishList(String wishListId) async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
-    WishList wishList = WishList.fromFirestore(await WishlistDao().getContactWishlistById(widget.wishListId, widget.userId));
-    setState(() {
-      _currentWishList = wishList;
-      _isLoading = false;
-    });
+    try {
+      final doc = await WishlistDao().getContactWishlistById(widget.wishListId, widget.userId);
+      if (!doc.exists) {
+        setState(() {
+          _currentWishList = null;
+          _isLoading = false;
+          _errorMessage = 'Lista no encontrada o no compartida.';
+        });
+        return;
+      }
+      WishList wishList = WishList.fromFirestore(doc);
+      setState(() {
+        _currentWishList = wishList;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _currentWishList = null;
+        _isLoading = false;
+        _errorMessage = 'Error al cargar la lista: $e';
+      });
+    }
   }
 
   /// Construye el botón de ordenación con indicador de dirección
@@ -187,7 +206,9 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                 child: CircularProgressIndicator(),
               ),
             )
-          : Column(
+          : (_currentWishList == null)
+            ? Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text(_errorMessage ?? 'Lista no encontrada.')))
+            : Column(
               children: [
                 // Botones de ordenación centrados
                 Padding(
@@ -211,7 +232,13 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                 ),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
-                    stream: WishlistDao().getListItems(widget.userId, _currentWishList!, orderByField: _orderByField, descending: _descending),
+                    stream: WishlistDao().getListItems(
+                      widget.userId,
+                      _currentWishList!,
+                      orderByField: _orderByField,
+                      descending: _descending,
+                      includeTaken: widget.userId == UserAuth.instance.getCurrentUser().uid,
+                    ),
                     builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

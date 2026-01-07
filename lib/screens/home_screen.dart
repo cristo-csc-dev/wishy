@@ -8,7 +8,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
-import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
@@ -19,10 +18,6 @@ import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
-import 'package:wishy/screens/wish/list_detail_screen.dart';
-import 'package:wishy/widgets/list_card.dart';
-import 'package:wishy/models/event.dart'; // ¡NUEVO!
-import 'package:wishy/screens/event/event_detail_screen.dart'; // ¡NUEVO!
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -222,22 +217,79 @@ class _HomeScreenState extends State<HomeScreen> {
           itemBuilder: (context, index) {
             final doc = myWishlistsSnapshot.data!.docs[index];
             final list = WishList.fromFirestore(doc);
-            return ListCard(
-              wishList: list,
-              onTap: () async {
-                // Navegar a la ruta de mis listas (nueva)
-                context.go('/home/wishlists/mine/${list.id}');
-              },
-              onEdit: () async {
-                context.go('/home/wishlists/mine/${list.id}/editFromList');
-              },
-              onShare: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Compartir lista "${list.name}"')));
-              },
-              onDelete: () {
-                _showDeleteConfirmationDialog(list);
-              },
+
+            String privacyText() {
+              switch (list.privacy) {
+                case ListPrivacy.private:
+                  return 'Privada';
+                case ListPrivacy.public:
+                  return 'Pública (Enlace)';
+                case ListPrivacy.shared:
+                  return 'Compartida con ${list.sharedWithContactIds.length} pers.';
+              }
+            }
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: InkWell(
+                onTap: () {
+                  context.go('/home/wishlists/mine/${list.id}');
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        child: list.name.isNotEmpty
+                            ? Text(list.name.substring(0, 2), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold))
+                            : const Icon(Icons.card_giftcard, color: Colors.indigo),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              list.name,
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Text('${list.itemCount} deseos • ${privacyText()}', style: TextStyle(color: Colors.grey.shade600)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            context.go('/home/wishlists/mine/${list.id}/editFromList');
+                          }
+                          if (value == 'share') {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Compartir lista "${list.name}"')));
+                          }
+                          if (value == 'delete') {
+                            _showDeleteConfirmationDialog(list);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Eliminar'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             );
           },
         );
@@ -411,6 +463,14 @@ class _HomeScreenState extends State<HomeScreen> {
             title: const Text('Perfil'),
             onTap: () {
               context.go('/home/profile');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.card_giftcard, color: Colors.indigo),
+            title: const Text('Los tengo!'),
+            onTap: () {
+              // Navegar a la pantalla de 'Los tengo'
+              context.go('/home/ihaveit');
             },
           ),
           const Divider(),

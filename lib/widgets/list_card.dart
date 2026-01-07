@@ -26,8 +26,6 @@ class ListCard extends StatelessWidget {
         return 'Pública (Enlace)';
       case ListPrivacy.shared:
         return 'Compartida con ${wishList.sharedWithContactIds.length} pers.';
-      default:
-        return 'Desconocido';
     }
   }
 

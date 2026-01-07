@@ -5,6 +5,7 @@ import 'package:wishy/models/wish_item.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
+import 'package:wishy/screens/wish/i_have_it_screen.dart';
 
 class WishCard extends StatefulWidget {
   final WishItem wishItem;
@@ -148,14 +149,30 @@ class _WishCardState extends State<WishCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          wishItem.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                wishItem.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (wishItem.isTaken)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: Chip(
+                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  label: const Text('Obtenido'),
+                                  avatar: const Icon(Icons.check, size: 16),
+                                ),
+                              ),
+                          ],
                         ),
                         // Prioridad (estrellas) antes del precio
                         _buildPriorityStars(),
@@ -190,23 +207,46 @@ class _WishCardState extends State<WishCard> {
                       ],
                     ),
                   ),
-                  if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid)
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'edit') widget.onEdit?.call();
-                        if (value == 'delete') widget.onDelete?.call();
-                      },
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'edit') widget.onEdit?.call();
+                      if (value == 'delete') widget.onDelete?.call();
+                      if (value == 'ihaveit') {
+                        // Abrir formulario para marcar como 'Lo tengo!'
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => IHaveItScreen(
+                              sourceUserId: wishList.ownerId,
+                              wishListId: wishList.id,
+                              wishItemId: wishItem.id,
+                              wishItemName: wishItem.name,
+                            ),
+                          ),
+                        );
+                        if (result != null && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Deseo marcado como "Lo tengo!"')),
+                          );
+                        }
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Text('Editar'),
+                      ),
+                      if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid)
                         const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Text('Editar'),
+                          value: 'ihaveit',
+                          child: Text('Lo tengo!'),
                         ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Text('Eliminar'),
-                        ),
-                      ],
-                    ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Text('Eliminar'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 10),

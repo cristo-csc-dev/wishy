@@ -4,7 +4,6 @@ import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/screens/contacts/create_contact_request_screen.dart';
-import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 
 class ContactsListScreen extends StatelessWidget {
   const ContactsListScreen({super.key});

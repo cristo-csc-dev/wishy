@@ -8,11 +8,14 @@ import 'package:wishy/screens/home_screen.dart';
 import 'package:wishy/screens/login/create_user_screen.dart';
 import 'package:wishy/screens/login/login_screen.dart';
 import 'package:wishy/screens/user/user_profile_screen.dart';
+import 'package:wishy/screens/wish/my_ihaveit_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/wish/my_lists_overview_screen.dart';
 import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/screens/wish/wish_detail_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wishy/screens/wish/ihaveit_detail_screen.dart';
 
 GoRouter getRouter(UserAuth userAuth) => GoRouter(
 
@@ -57,6 +60,26 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
         GoRoute(
           path: '/profile',
           builder: (context, state) => const UserProfileScreen(),
+        ),
+        // Mis items "Los tengo"
+        GoRoute(
+          path: '/ihaveit',
+          builder: (context, state) => const MyIHaveItScreen(),
+          routes: [
+            GoRoute(
+              path: '/:claimId',
+              builder: (context, state) {
+                final claimId = state.pathParameters['claimId'] ?? '';
+                final currentUserId = UserAuth.instance.getCurrentUser().uid;
+                final claimRef = FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUserId)
+                  .collection('ihaveit')
+                  .doc(claimId);
+                return IHaveItDetailScreen(claimRef: claimRef);
+              },
+            ),
+          ],
         ),
         // Contactos
         GoRoute(
@@ -144,6 +167,7 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
                 return CreateEditListScreen(wishListId: wishListId);
               },
             ),
+
             GoRoute(
               path: '/wish/add',
               builder: (context, state) {

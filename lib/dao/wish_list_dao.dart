@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/models/wish_list.dart';
 
@@ -80,6 +79,8 @@ class WishlistDao {
 
         // Añadimos timestamp para poder ordenar por fecha añadida
         final dataWithTimestamp = Map<String, dynamic>.from(itemData);
+        // Asegurarnos de que los campos de 'taken' existen por defecto
+        dataWithTimestamp['isTaken'] = dataWithTimestamp['isTaken'] ?? false;
         dataWithTimestamp['createdAt'] = FieldValue.serverTimestamp();
 
         await itemsRef.add(dataWithTimestamp);
@@ -132,6 +133,77 @@ class WishlistDao {
     } catch (e) {
       // Devolvemos el error para que el UI pueda manejarlo
       throw Exception('Error al eliminar el deseo: $e');
+    }
+  }
+
+  /// Marca un item como 'taken' y crea un documento de 'claim' en `users/{currentUser}/ihaveit`.
+  /// El 'claim' contiene una referencia al wish original y campos `iHaveItDate` y `iHaveItComments`.
+  Future<void> moveItemToIHaveIt({
+    required String sourceUserId,
+    required String wishlistId,
+    required String itemId,
+    required DateTime iHaveItDate,
+    String? iHaveItComments,
+  }) async {
+    if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
+      throw Exception('Usuario no autenticado.');
+    }
+
+    try {
+      await _db.runTransaction((transaction) async {
+        final sourceItemRef = _db
+          .collection('users')
+          .doc(sourceUserId)
+          .collection('wishlists')
+          .doc(wishlistId)
+          .collection('items')
+          .doc(itemId);
+
+        final sourceSnapshot = await transaction.get(sourceItemRef);
+        if (!sourceSnapshot.exists) {
+          throw Exception('Deseo no encontrado.');
+        }
+
+        final sourceData = Map<String, dynamic>.from(sourceSnapshot.data() as Map<String, dynamic>);
+
+        final currentUserId = UserAuth.instance.getCurrentUser().uid;
+        final destCollection = _db.collection('users').doc(currentUserId).collection('ihaveit');
+        final newDocRef = destCollection.doc();
+
+        // Preparar datos del claim
+        final claimData = <String, dynamic>{};
+        claimData['iHaveItDate'] = Timestamp.fromDate(iHaveItDate);
+        claimData['iHaveItComments'] = iHaveItComments ?? '';
+        claimData['originalOwnerId'] = sourceUserId;
+        claimData['originalWishlistId'] = wishlistId;
+        claimData['originalWishId'] = itemId;
+        claimData['originalWishRef'] = sourceItemRef;
+        // Incluir algunos campos del deseo original para mostrar en la lista rápidamente
+        claimData['name'] = sourceData['name'];
+        claimData['imageUrl'] = sourceData['imageUrl'] ?? '';
+        claimData['estimatedPrice'] = sourceData['estimatedPrice'];
+        claimData['movedAt'] = FieldValue.serverTimestamp();
+
+        // Escribir claim
+        transaction.set(newDocRef, claimData);
+
+        // Eliminar item original de la wishlist y decrementar el contador en la wishlist
+        final wishlistRef = _db
+          .collection('users')
+          .doc(sourceUserId)
+          .collection('wishlists')
+          .doc(wishlistId);
+
+        final alreadyTaken = sourceData['isTaken'] == true;
+        if (alreadyTaken) {
+          throw Exception('El deseo ya fue marcado como obtenido por otra persona.');
+        }
+
+        transaction.delete(sourceItemRef);
+        transaction.update(wishlistRef, {'itemCount': FieldValue.increment(-1)});
+      });
+    } catch (e) {
+      throw Exception('Error al mover el deseo: $e');
     }
   }
 
@@ -188,17 +260,21 @@ class WishlistDao {
       .delete();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(String userId, WishList currentWishList, {String? orderByField, bool descending = true}) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getListItems(String userId, WishList currentWishList, {String? orderByField, bool descending = true, bool includeTaken = false}) {
     if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
 
-    final collectionRef = _db
+    Query<Map<String, dynamic>> collectionRef = _db
       .collection('users')
       .doc(userId)
       .collection('wishlists')
       .doc(currentWishList.id)
       .collection('items');
+
+    // if (!includeTaken) {
+    //   collectionRef = collectionRef.where('isTaken', isEqualTo: false);
+    // }
 
     if (orderByField != null && orderByField.isNotEmpty) {
       return collectionRef.orderBy(orderByField, descending: descending).snapshots();

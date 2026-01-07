@@ -12,6 +12,11 @@ class WishItem {
   bool isBought;
   String? boughtById;
 
+  // Nuevo: campos para marcación 'Lo tengo'
+  bool isTaken;
+  String? claimedBy;
+  DateTime? claimedAt;
+
   WishItem({
     required this.id,
     required this.name,
@@ -23,6 +28,9 @@ class WishItem {
     this.priority = 3,
     this.isBought = false,
     this.boughtById,
+    this.isTaken = false,
+    this.claimedBy,
+    this.claimedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -36,6 +44,9 @@ class WishItem {
       'priority': priority,
       'isBought': isBought,
       'boughtById': boughtById,
+      'isTaken': isTaken,
+      'claimedBy': claimedBy,
+      'claimedAt': claimedAt == null ? null : Timestamp.fromDate(claimedAt!),
     };
   }
 
@@ -54,6 +65,9 @@ class WishItem {
       priority: data['priority'] ?? 3,
       isBought: data['isBought'] ?? false,
       boughtById: data['boughtById'],
+      isTaken: data['isTaken'] ?? false,
+      claimedBy: data['claimedBy'],
+      claimedAt: data['claimedAt'] != null ? (data['claimedAt'] as Timestamp).toDate() : null,
     );
   }
 }
