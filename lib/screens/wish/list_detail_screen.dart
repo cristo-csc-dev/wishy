@@ -1,22 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
+import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
-import 'package:wishy/screens/wish/create_edit_list_screen.dart';
+import 'package:wishy/services/contacts_manager.dart';
 import 'package:wishy/widgets/wish_card.dart';
 
 class ListDetailScreen extends StatefulWidget {
   final String userId;
-  final WishList wishList;
-  final bool isForGifting; // True si es una lista de otro para regalar
+  final String wishListId;
 
   const ListDetailScreen({
     super.key,
     required this.userId,
-    required this.wishList,
-    this.isForGifting = false,
+    required this.wishListId,
   });
 
   @override
@@ -25,24 +25,117 @@ class ListDetailScreen extends StatefulWidget {
 
 class _ListDetailScreenState extends State<ListDetailScreen> {
 
-  late WishList _currentWishList; // Para poder modificarla
+  WishList? _currentWishList;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // Ordenación
+  String? _orderByField = 'priority'; // default: ordenar por prioridad descendente (opciones: 'priority', 'name')
+  bool _descending = true; // por defecto descendente (ej: prioridad: mayor primero)
 
   @override
   void initState() {
     super.initState();
-    _currentWishList = widget.wishList;
+    _getWishList(widget.wishListId);
+  }
+
+  void _getWishList(String wishListId) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final doc = await WishlistDao().getContactWishlistById(widget.wishListId, widget.userId);
+      if (!doc.exists) {
+        setState(() {
+          _currentWishList = null;
+          _isLoading = false;
+          _errorMessage = 'Lista no encontrada o no compartida.';
+        });
+        return;
+      }
+      WishList wishList = WishList.fromFirestore(doc);
+      setState(() {
+        _currentWishList = wishList;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _currentWishList = null;
+        _isLoading = false;
+        _errorMessage = 'Error al cargar la lista: $e';
+      });
+    }
+  }
+
+  /// Construye el botón de ordenación con indicador de dirección
+  Widget _buildSortButton({required IconData icon, required String label, required String field}) {
+    final isActive = _orderByField == field;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              if (_orderByField == field) {
+                // Toggle order
+                _descending = !_descending;
+              } else {
+                _orderByField = field;
+                _descending = true; // default: descending
+              }
+            });
+          },
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isActive ? Theme.of(context).colorScheme.primary : Colors.transparent,
+              shape: BoxShape.circle,
+              border: isActive ? null : Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(icon, color: isActive ? Colors.white : null),
+                if (isActive)
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Icon(
+                      _descending ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: 12,
+                      color: Colors.white70,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            color: isActive ? Theme.of(context).colorScheme.primary : null,
+          ),
+        ),
+      ],
+    );
   }
 
   void _addWishItem() async {
     final newWish = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddWishScreen(wishList: _currentWishList,),
+        builder: (context) => AddWishScreen(wishListId: _currentWishList!.id),
       ),
     );
     if (newWish != null && newWish is WishItem) {
       setState(() {
-        WishlistDao().addItem(_currentWishList.id!, newWish.toMap());
+        WishlistDao().addItem(_currentWishList!.id!, newWish.toMap());
       });
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));
@@ -54,8 +147,8 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => AddWishScreen(
-          wishItem: WishItem.fromFirestore(wishItem),
-          wishList: widget.wishList,
+          wishItemId: wishItem.id,
+          wishListId: _currentWishList!.id,
         ),
       ),
     );
@@ -85,9 +178,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  WishlistDao().removeItem(_currentWishList.id!, wishItem.id);
-                  // wishItemList.docs[index].reference.delete();
-                  // _currentWishList.set(WishListFields.itemCount,wishItemList.docs.length);
+                  WishlistDao().removeItem(_currentWishList!.id!, wishItem.id);
                 });
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -103,68 +194,81 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Contact? contact = ContactsManager.instance.getById(widget.userId);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentWishList.name),
-        actions: [
-          if (!widget.isForGifting) // Solo si es una lista propia
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                // Navegar a la pantalla de edición de la lista
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateEditListScreen(wishList: _currentWishList),
+        title: Text('"${_currentWishList?.name ?? ""}" ${contact != null? "creada por ${contact.displayName}" : ""}'),
+      ),
+      body: _isLoading
+          ? Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          : (_currentWishList == null)
+            ? Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text(_errorMessage ?? 'Lista no encontrada.')))
+            : Column(
+              children: [
+                // Botones de ordenación centrados
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildSortButton(
+                        icon: Icons.flag,
+                        label: 'Prioridad',
+                        field: 'priority',
+                      ),
+                      const SizedBox(width: 24),
+                      _buildSortButton(
+                        icon: Icons.sort_by_alpha,
+                        label: 'Nombre',
+                        field: 'name',
+                      ),
+                    ],
                   ),
-                ).then((updatedListId) async {
-                  var updateWishList = WishList.fromFirestore(
-                    await WishlistDao().getWishlistById(updatedListId)
-                  );
-                  setState(() {
-                    _currentWishList = updateWishList;
-                  });
-                });
+                ),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: WishlistDao().getListItems(
+                      widget.userId,
+                      _currentWishList!,
+                      orderByField: _orderByField,
+                      descending: _descending,
+                      includeTaken: widget.userId == UserAuth.instance.getCurrentUser().uid,
+                    ),
+                    builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('Esta lista no tiene deseos aún.'));
+                }
+
+                return ListView.builder(
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    final itemDoc = snapshot.data!.docs[index];
+                    WishItem item = WishItem.fromFirestore(itemDoc);
+                    return WishCard(
+                      wishItem: item,
+                      wishList: _currentWishList!,
+                      // isForGifting: widget.isForGifting,
+                      onEdit: () => _currentWishList?.ownerId == UserAuth.instance.getCurrentUser().uid? _editWishItem(itemDoc): null,
+                      onDelete: () => _currentWishList?.ownerId == UserAuth.instance.getCurrentUser().uid? _deleteWishItem(snapshot.data!, index): null,
+                    );
+                  },
+                );
               },
             ),
+          ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: WishlistDao().getListItems(widget.userId, _currentWishList),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
-          }
-          if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('Esta lista no tiene deseos aún.'));
-          }
-
-          // Si hay datos, construye la lista de ítems
-          return ListView.builder(
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              final itemDoc = snapshot.data!.docs[index];
-              WishItem item = WishItem.fromFirestore(itemDoc);
-              return WishCard(
-                  wishItem: item,
-                  wishList: _currentWishList,
-                  isForGifting: widget.isForGifting,
-                  onEdit: !widget.isForGifting ? () => _editWishItem(itemDoc) : null,
-                  onDelete: !widget.isForGifting ? () => _deleteWishItem(snapshot.data!, index) : null,
-                );
-            },
-          );
-        },
-      ),
-      floatingActionButton: !widget.isForGifting
-          ? FloatingActionButton(
-              onPressed: _addWishItem,
-              child: const Icon(Icons.add),
-            )
-          : null, // No mostrar FAB si es para regalar
     );
   }
 }

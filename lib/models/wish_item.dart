@@ -8,9 +8,14 @@ class WishItem {
   String? suggestedStore;
   String? notes;
   String? imageUrl;
-  int priority; // 1 (low) to 5 (high) or custom enum
-  bool isBought; // Para el creador: si alguien lo ha comprado.
-  String? boughtById; // ID del contacto que lo marcó (opcional, para el creador)
+  int priority;
+  bool isBought;
+  String? boughtById;
+
+  // Nuevo: campos para marcación 'Lo tengo'
+  bool isTaken;
+  String? claimedBy;
+  DateTime? claimedAt;
 
   WishItem({
     required this.id,
@@ -20,9 +25,12 @@ class WishItem {
     this.suggestedStore,
     this.notes,
     this.imageUrl,
-    this.priority = 3, // Default to medium
+    this.priority = 3,
     this.isBought = false,
     this.boughtById,
+    this.isTaken = false,
+    this.claimedBy,
+    this.claimedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -36,6 +44,9 @@ class WishItem {
       'priority': priority,
       'isBought': isBought,
       'boughtById': boughtById,
+      'isTaken': isTaken,
+      'claimedBy': claimedBy,
+      'claimedAt': claimedAt == null ? null : Timestamp.fromDate(claimedAt!),
     };
   }
 
@@ -54,6 +65,9 @@ class WishItem {
       priority: data['priority'] ?? 3,
       isBought: data['isBought'] ?? false,
       boughtById: data['boughtById'],
+      isTaken: data['isTaken'] ?? false,
+      claimedBy: data['claimedBy'],
+      claimedAt: data['claimedAt'] != null ? (data['claimedAt'] as Timestamp).toDate() : null,
     );
   }
 }

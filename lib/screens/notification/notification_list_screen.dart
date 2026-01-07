@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/models/notification.dart';
-import 'package:wishy/screens/notification/types/notification_type.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key});

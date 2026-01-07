@@ -49,8 +49,7 @@ class UserDao {
     if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
       throw Exception('Usuario no autenticado.');
     }
-    
-    // Busca al usuario destinatario por su email
+
     final recipientsSnapshot = await _db
       .collection('users')
       .where('email_lowercase', isEqualTo: email.toLowerCase())
@@ -117,10 +116,8 @@ class UserDao {
       throw Exception('Usuario no autenticado.');
     }
 
-    // Usa una transacción para asegurar la atomicidad de las operaciones
     return _db.runTransaction((transaction) async {
 
-      // 2. Crea el documento bidireccional en la subcolección del emisor
       var data = {
           'userId': UserAuth.instance.getCurrentUser().uid,
           'name': notification.senderName,
@@ -150,22 +147,18 @@ class UserDao {
     });
   }
 
-  // Función para aceptar una solicitud de contacto
   Future<void> acceptContact({required AppNotification notification}) async {
     return _responseContactRequest(response: "accepted", notification: notification);
   }
 
-  // Función para rechazar una solicitud de contacto
   Future<void> declineContact({required AppNotification notification}) async {
     return _responseContactRequest(response: "declined", notification: notification);
   }
 
-  // Función para rechazar una solicitud de contacto 
   Future<void> blockContact({required AppNotification notification}) async {
     return _responseContactRequest(response: "blocked", notification: notification);
   }
 
-  // Función para obtener los UIDs de los contactos aceptados del usuario actual
   Future<List<Contact>> getAcceptedContacts() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || !UserAuth.instance.isUserAuthenticatedAndVerified()) {
@@ -234,9 +227,23 @@ class UserDao {
         .doc(UserAuth.instance.getCurrentUser().uid)
         .collection('contacts')
         .doc(contact.id);
+
+    final resolvedName = name.trim().isNotEmpty ? name.trim() : (contact.name ?? '');
+
+    await userContactRef.update({
+      'contactName': resolvedName,
+    });
+  }
+
+  Future<void> updateContactAvatar(Contact contact, String avatarUrl) async {
+    final userContactRef = _db
+        .collection('users')
+        .doc(UserAuth.instance.getCurrentUser().uid)
+        .collection('contacts')
+        .doc(contact.id);
     
     await userContactRef.update({
-      'name': name,
+      'avatarUrl': avatarUrl,
     });
   }
 

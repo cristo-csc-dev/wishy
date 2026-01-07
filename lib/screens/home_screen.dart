@@ -8,7 +8,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
-import 'package:wishy/dao/event_dao.dart';
 import 'package:wishy/dao/notification_dao.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
@@ -17,15 +16,8 @@ import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
-import 'package:wishy/screens/contacts/contact_list_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
-import 'package:wishy/screens/wish/create_edit_list_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
-import 'package:wishy/screens/wish/list_detail_screen.dart';
-import 'package:wishy/screens/user/user_profile_screen.dart';
-import 'package:wishy/widgets/list_card.dart';
-import 'package:wishy/models/event.dart'; // ¡NUEVO!
-import 'package:wishy/screens/event/event_detail_screen.dart'; // ¡NUEVO!
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchPendingRequestsCount();
+    _fetchNotificationsCount();
     platform.setMethodCallHandler(_handleMethodCalls);
   }
 
@@ -125,16 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: (_selectedIndex == 0)? FloatingActionButton(
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateEditListScreen()),
-          );
-          if (result != null && result is WishList) {
-            setState(() {
-              //userWishLists.add(result);
-            });
+          final newListName = await context.push('/home/wishlists/mine/add'); // Volver a Home después de crear la lista
+          if(context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Lista "${result.name}" creada.')));
+                SnackBar(content: Text('Lista "$newListName" creada.')));
           }
         },
         child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico
@@ -142,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _fetchPendingRequestsCount() {
+  void _fetchNotificationsCount() {
     if (UserAuth.instance.isUserAuthenticatedAndVerified()) {
       _notificationCountSubscription =
       NotificationDao().getNotificationsCount().listen((QuerySnapshot snapshot) {
@@ -152,7 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       }, onError: (error) {
-          // Manejo de errores
           if (mounted) {
               setState(() {
                    _pendingRequestsCount = 0;
@@ -162,7 +147,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Modificación en _buildSegmentedControl para 3 pestañas
   Widget _buildSegmentedControl() {
     return Container(
       padding: const EdgeInsets.all(8.0),
@@ -199,27 +183,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        //   Expanded( // ¡NUEVA PESTAÑA!
-        //     child: InkWell(
-        //       onTap: () { setState(() { _selectedIndex = 2; }); },
-        //       child: Container(
-        //         padding: const EdgeInsets.symmetric(vertical: 12.0),
-        //         decoration: BoxDecoration(
-        //           color: _selectedIndex == 2 ? Colors.blueGrey.shade100 : Colors.transparent,
-        //           borderRadius: BorderRadius.circular(8),
-        //         ),
-        //         child: Center(
-        //           child: Text('Para Eventos', style: TextStyle(fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 2 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
-        //         ),
-        //       ),
-        //     ),
-        //   ),
         ],
       ),
     );
   }
-
-  // ... ( _buildMyListsView y _buildGiftListsContactsView permanecen igual ) ...
 
   // --- VISTA DE MIS LISTAS ---
   Widget _buildMyListsView() {
@@ -250,112 +217,75 @@ class _HomeScreenState extends State<HomeScreen> {
           itemBuilder: (context, index) {
             final doc = myWishlistsSnapshot.data!.docs[index];
             final list = WishList.fromFirestore(doc);
-            return ListCard(
-              wishList: list,
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ListDetailScreen(userId: UserAuth.instance.getCurrentUser().uid,wishList: list),
-                  ),
-                );
-                // No necesitamos setState() aquí, ya que el StreamBuilder se encargará de la actualización
-              },
-              onEdit: () async {
-                final updatedList = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateEditListScreen(wishList: list),
-                  ),
-                );
-                // No necesitamos setState() aquí
-                if (updatedList != null && updatedList is WishList) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lista "${updatedList.name}" actualizada.')));
-                }
-              },
-              onShare: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Compartir lista "${list.name}"')));
-              },
-              onDelete: () {
-                _showDeleteConfirmationDialog(list);
-              },
-            );
-          },
-        );
-      },
-    );
-  }
 
-  // --- ¡NUEVA VISTA PARA EVENTOS! ---
-  Widget _buildEventsView() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: EventDao().getEventsSharedWithMe(), 
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+            String privacyText() {
+              switch (list.privacy) {
+                case ListPrivacy.private:
+                  return 'Privada';
+                case ListPrivacy.public:
+                  return 'Pública (Enlace)';
+                case ListPrivacy.shared:
+                  return 'Compartida con ${list.sharedWithContactIds.length} pers.';
+              }
+            }
 
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text('No hay eventos en el horizonte. ¡Crea uno!'),
-          );
-        }
-
-        var userEvents = snapshot.data!.docs
-            .map((doc) => Event.fromFirestore(doc.id, doc))
-            .toList();
-
-        return ListView.builder(
-          itemCount: userEvents.length,
-          itemBuilder: (context, index) {
-            final event = userEvents[index];
-            // Aquí podrías usar un EventCard widget reutilizable
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: InkWell(
-                onTap: () async {
-                  // Navegar a la pantalla de detalle del evento
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EventDetailScreen(event: event),
-                    ),
-                  );
-                  setState(() {}); // Refrescar si hay cambios en el evento
+                onTap: () {
+                  context.go('/home/wishlists/mine/${list.id}');
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        event.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        child: list.name.isNotEmpty
+                            ? Text(list.name.substring(0, 2), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold))
+                            : const Icon(Icons.card_giftcard, color: Colors.indigo),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              list.name,
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Text('${list.itemCount} deseos • ${privacyText()}', style: TextStyle(color: Colors.grey.shade600)),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Fecha: ${event.eventDate.toIso8601String().split('T')[0]}',
-                        style: TextStyle(color: Colors.grey.shade600),
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            context.go('/home/wishlists/mine/${list.id}/editFromList');
+                          }
+                          if (value == 'share') {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Compartir lista "${list.name}"')));
+                          }
+                          if (value == 'delete') {
+                            _showDeleteConfirmationDialog(list);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Eliminar'),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Tipo: ${event.type.toString().split('.').last}',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Participantes: ${event.participantUserIds.length}'),
-                      // Miniaturas de los participantes (opcional)
                     ],
                   ),
                 ),
@@ -363,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         );
-      }
+      },
     );
   }
 
@@ -406,6 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: InkWell(
                 onTap: () {
+                  context.go('/home/contacts/${contact.id}');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -424,14 +355,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           CircleAvatar(
                             backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             child: Text(
-                              contact.name?? '',
+                              (contact.contactName?? contact.name ?? contact.email).substring(0, 2),
                               style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
                             ),
                           ), // Usar un icono de la lista
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              contact.name?? contact.email,
+                              contact.contactName?? contact.name?? contact.email,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -484,10 +415,6 @@ class _HomeScreenState extends State<HomeScreen> {
   
   void _signOut() async {
     UserAuth.instance.signOut();
-    // Después de cerrar sesión, el StreamBuilder en main.dart detectará el cambio
-    // y navegará automáticamente a la pantalla de autenticación.
-    // Simplemente cierra la pantalla de perfil.
-    //Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _handleMethodCalls(MethodCall call) async {
@@ -497,22 +424,19 @@ class _HomeScreenState extends State<HomeScreen> {
       dev.log("Received shared text: $jsonData");
       WishItem wishDataItem = getWishItemFromMap(jsonData)!;
 
-      // Navegamos usando el contexto válido obtenido del GlobalKey
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => AddWishScreen(wishItem: wishDataItem),
+          builder: (context) => AddWishScreen(wishItemId: wishDataItem.id),
         ),
       );
     }
   }
 
-  // Widget para construir el panel lateral (Drawer)
   Widget _buildAppDrawer() {
     final user = _auth.currentUser;
 
     return Drawer(
       child: ListView(
-        // Elimina cualquier padding del ListView.
         padding: EdgeInsets.zero,
         children: <Widget>[
           UserAccountsDrawerHeader(
@@ -538,15 +462,15 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.edit, color: Colors.indigo),
             title: const Text('Perfil'),
             onTap: () {
-              // Cierra el drawer
-              Navigator.pop(context);
-              // Navega a la pantalla de perfil
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              );
+              context.go('/home/profile');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.card_giftcard, color: Colors.indigo),
+            title: const Text('Los tengo!'),
+            onTap: () {
+              // Navegar a la pantalla de 'Los tengo'
+              context.go('/home/ihaveit');
             },
           ),
           const Divider(),
@@ -554,16 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.people, color: Colors.indigo),
             title: const Text('Contactos'),
             onTap: () {
-              // Cierra el drawer
-              context.pop(context);
-              // Navega a la pantalla de perfil
-              context.go('/contacts');
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (context) => const ContactsListScreen(),
-              //   ),
-              // );
+              context.go('/home/contacts');
             },
           ),
           const Divider(),
@@ -571,13 +486,10 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Salir'),
             onTap: () {
-              // Cierra el drawer
               Navigator.pop(context);
-              // Llama a la función para cerrar sesión
               _signOut();
             },
           ),
-          // Puedes añadir más ListTiles aquí para futuras opciones de menú.
         ],
       ),
     );
@@ -585,7 +497,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    // 4. CANCELAR la suscripción para evitar el error
     _notificationCountSubscription?.cancel(); 
     super.dispose();
   }

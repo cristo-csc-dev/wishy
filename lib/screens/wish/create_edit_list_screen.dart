@@ -8,9 +8,9 @@ import 'package:wishy/models/wish_list.dart';
 import 'package:uuid/uuid.dart'; // Añadir al pubspec.yaml: uuid: ^4.0.0
 
 class CreateEditListScreen extends StatefulWidget {
-  final WishList? wishList; // Si es null, es una nueva lista; si no, es para editar
+  final String? wishListId; // Si es null, es una nueva lista; si no, es para editar
 
-  const CreateEditListScreen({super.key, this.wishList});
+  const CreateEditListScreen({super.key, this.wishListId});
 
   @override
   State<CreateEditListScreen> createState() => _CreateEditListScreenState();
@@ -19,6 +19,8 @@ class CreateEditListScreen extends StatefulWidget {
 class _CreateEditListScreenState extends State<CreateEditListScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  bool _isLoading = false;
+  WishList? _wishList;
   ListPrivacy _selectedPrivacy = ListPrivacy.private;
   List<String> _selectedContactIds = [];
   List<Contact> _contacts = [];
@@ -26,17 +28,27 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.wishList?.name ?? '');
-    _selectedPrivacy = widget.wishList?.privacy ?? ListPrivacy.private;
-    _selectedContactIds = List.from(widget.wishList?.sharedWithContactIds ?? []);
-    _loadContacts();
+    _loadContactsAndList();    
   }
 
-  Future<void> _loadContacts() async {
-    await UserDao().getAcceptedContacts().then((contacts) {
-      setState(() {
-        _contacts = contacts;
-      });
+  Future<void> _loadContactsAndList() async {
+    setState(() {
+      _isLoading = true;
+    });
+    var contacts = await UserDao().getAcceptedContacts();
+    WishList? wishList = null;
+    if(widget.wishListId != null) {
+      wishList = WishList.fromFirestore(
+        await WishlistDao().getWishlistById(widget.wishListId!));
+    }
+    setState(() {
+      _contacts = contacts;
+      _wishList = wishList;
+      _nameController = TextEditingController(text: _wishList?.name ?? '');
+      _selectedPrivacy = _wishList?.privacy ?? ListPrivacy.private;
+      _selectedContactIds = List.from(_wishList?.sharedWithContactIds ?? []);
+    
+      _isLoading = false;
     });
   }
 
@@ -48,7 +60,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
 
   void _saveList() async {
     if (_formKey.currentState!.validate()) {
-      final String id = widget.wishList?.id ?? const Uuid().v4();
+      final String id = widget.wishListId ?? const Uuid().v4();
 
       try {
         if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
@@ -62,7 +74,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
               : [],
           'ownerId': UserAuth.instance.getCurrentUser().uid,
           'createdAt': FieldValue.serverTimestamp(),
-          'itemCount': widget.wishList?.itemCount ?? 0,
+          'itemCount': _wishList?.itemCount ?? 0,
         });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +83,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
         return;
       }
 
-      Navigator.pop(context, id); // Devuelve la nueva/actualizada lista
+      Navigator.pop(context, _nameController.text); // Devuelve la nueva/actualizada lista
     }
   }
 
@@ -126,7 +138,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.wishList == null ? 'Nueva Lista' : 'Editar Lista'),
+        title: Text(_wishList == null ? 'Nueva Lista' : 'Editar Lista'),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -134,7 +146,9 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+      : SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,

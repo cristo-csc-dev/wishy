@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
-import 'package:wishy/screens/wish/list_detail_screen.dart';
 import 'package:wishy/widgets/list_card.dart';
 
 class FriendListsOverviewScreen extends StatefulWidget {
@@ -14,7 +14,6 @@ class FriendListsOverviewScreen extends StatefulWidget {
   
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return FriendListOverviewState();
   }
 }
@@ -43,18 +42,27 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = _contact?.name ?? _contact?.email ?? 'Contacto';
+    final displayName = _contact?.displayName ?? 'Contacto';
     
     return Scaffold(
       appBar: AppBar(
         title: Text('Listas de $displayName'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              if (_contact != null) {
+                context.go('/home/contacts/${_contact!.id}/edit');
+              }
+            },
+            icon: const Icon(Icons.edit),
+            tooltip: 'Editar contacto',
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // Avatar fijo arriba
           Container(
             width: double.infinity,
-            // color: Theme.of(context).colorScheme.surfaceVariant,
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Column(
               children: [
@@ -62,7 +70,7 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
                   backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   radius: 40,
                   child: Text(
-                    _contact?.name?? '',
+                    displayName.isNotEmpty ? displayName[0] : '',
                     style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -72,12 +80,11 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
 
           _isLoading?
             Container(
-              color: Colors.black.withOpacity(0.5), // Fondo semitransparente
+              color: Colors.black.withOpacity(0.5),
               child: Center(
                 child: CircularProgressIndicator(),
               ),
             ):
-            // Listas scrollables debajo
             Expanded(
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: WishlistDao().getSharedWishlistsStreamSnapshot(_contact!.id),
@@ -106,21 +113,12 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
                     padding: const EdgeInsets.all(12),
                     itemCount: contactSharedLists.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
+                    itemBuilder: (contextItem, index) {
                       final list = contactSharedLists[index];
                       return ListCard(
                         wishList: list,
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ListDetailScreen(
-                                userId: _contact!.id,
-                                wishList: list,
-                                isForGifting: true,
-                              ),
-                            ),
-                          );
+                          context.go('/home/contacts/${_contact!.id}/lists/${list.id}');
                         },
                         onEdit: () {},
                         onShare: () {},

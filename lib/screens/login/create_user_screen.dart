@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/screens/login/email_verification_screen.dart';
-import 'package:wishy/utils/message_utils.dart';
 
 class CreateUserScreen extends StatefulWidget {
   const CreateUserScreen({super.key});
@@ -37,7 +36,6 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
       return;
     }
 
-    String message = '';
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text,

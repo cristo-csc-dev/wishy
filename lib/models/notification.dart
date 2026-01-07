@@ -36,7 +36,7 @@ class AppNotification {
 
   factory AppNotification.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    var type = NotificationType.fromFirestore(data['type'])!;
+    var type = NotificationType.fromFirestore(data['type']);
     return AppNotification(
       id: doc.id,
       type: type,
@@ -50,7 +50,6 @@ class AppNotification {
       senderUserId: data['senderUserId'],
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       isRead: data['isRead'] as bool? ?? false,
-      //contactRef: data['ref'] as DocumentReference?,
       docRef: doc,
     );
   }

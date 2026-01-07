@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:wishy/services/contacts_manager.dart';
 
 class UserAuth extends ChangeNotifier {
 
@@ -8,7 +9,20 @@ class UserAuth extends ChangeNotifier {
   static final UserAuth _instance = UserAuth._internal();
 
   // 2. Constructor privado para evitar que se creen más instancias por error
-  UserAuth._internal();
+  // Inicializa el estado a partir de FirebaseAuth y mantiene sincronizado
+  UserAuth._internal() {
+    // Estado inicial basado en si ya hay usuario persistido
+    _isAuthenticated = FirebaseAuth.instance.currentUser != null;
+
+    // Mantener el estado sincronizado y notificar a los listeners (ej. GoRouter)
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      final newVal = user != null;
+      if (_isAuthenticated != newVal) {
+        _isAuthenticated = newVal;
+        notifyListeners();
+      }
+    });
+  }
 
   // 3. Factory para que al llamar AuthService() siempre devuelva la misma instancia
   factory UserAuth() {
@@ -66,6 +80,8 @@ class UserAuth extends ChangeNotifier {
   void signOut() async {
     await FirebaseAuth.instance.signOut();
     _isAuthenticated = false;
+    // Limpiar cache de contactos al cerrar sesión
+    ContactsManager.instance.clear();
     notifyListeners();
   }
 }

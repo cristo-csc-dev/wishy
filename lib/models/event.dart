@@ -1,4 +1,3 @@
-// lib/models/event.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum EventType {
@@ -14,13 +13,13 @@ class Event {
   final String id;
   String name;
   String description;
-  String ownerId; // ID del usuario que crea el evento
+  String ownerId;
   DateTime eventDate;
   EventType type;
-  List<String> invitedUserIds; // IDs de los usuarios invitados
-  List<String> participantUserIds; // IDs de los usuarios que han aceptado/se han unido
-  Map<String, List<String>> userListsInEvent; // userId -> lista de wishListIds asociados al evento por ese usuario
-  Map<String, List<String>> userLooseWishesInEvent; // userId -> lista de wishItemIds sueltos en el evento
+  List<String> invitedUserIds;
+  List<String> participantUserIds;
+  Map<String, List<String>> userListsInEvent;
+  Map<String, List<String>> userLooseWishesInEvent;
 
   Event({
     required this.id,

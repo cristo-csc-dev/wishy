@@ -57,7 +57,7 @@ class WishList {
     return {
       'name': name,
       'privacy': privacy.toString().split('.').last,
-      'sharedWithContactIds': sharedWithContactIds ?? [],
+      'sharedWithContactIds': sharedWithContactIds,
       'ownerId': ownerId,
       'itemCount': itemCount,
     };
