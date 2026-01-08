@@ -439,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => AddWishScreen(wishItemId: wishDataItem.id),
+          builder: (context) => AddWishScreen(wishItem: wishDataItem),
         ),
       );
     }

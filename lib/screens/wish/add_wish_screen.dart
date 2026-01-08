@@ -9,11 +9,13 @@ import 'package:wishy/models/wish_list.dart';
 class AddWishScreen extends StatefulWidget {
   final String? wishItemId;
   final String? wishListId;
+  final WishItem? wishItem;
 
   const AddWishScreen({
     super.key,
     this.wishItemId,
     this.wishListId,
+    this.wishItem,
   });
 
   @override
@@ -34,48 +36,57 @@ class _AddWishScreenState extends State<AddWishScreen> {
   bool _isLoading = false;
   WishItem? _wishItem;
   WishList? _wishList;
+  bool _listSelectionError = false;
 
   @override
   void initState() {
     super.initState();
     _loadListAndWish();
-    
   }
 
   void _loadListAndWish() async {
-
     WishList? wishList;
     WishItem? wishItem;
 
     setState(() {
       _isLoading = true;
     });
-    if(widget.wishListId != null) {
-      var wishListSnapshot = await WishlistDao().getWishlistById(widget.wishListId!);
+    if (widget.wishListId != null) {
+      var wishListSnapshot = await WishlistDao().getWishlistById(
+        widget.wishListId!,
+      );
       wishList = WishList.fromFirestore(wishListSnapshot);
-      if(widget.wishItemId != null) {
-        var wishItemSnapshot = await wishListSnapshot.reference.collection("items").doc(widget.wishItemId).get();
+      if (widget.wishItemId != null) {
+        var wishItemSnapshot = await wishListSnapshot.reference
+            .collection("items")
+            .doc(widget.wishItemId)
+            .get();
         wishItem = WishItem.fromFirestore(wishItemSnapshot);
       }
-      setState(() {
-        _wishList = wishList;
-        _wishItem = wishItem;
-        fillForm();
-        _isLoading = false;
-      });
     }
+    if (widget.wishItem != null) {
+      wishItem = widget.wishItem;
+    }
+    setState(() {
+      _wishList = wishList;
+      _wishItem = wishItem;
+      fillForm();
+      _isLoading = false;
+    });
   }
 
   void fillForm() {
     _nameController = TextEditingController(text: _wishItem?.name ?? '');
-    _urlController =
-        TextEditingController(text: _wishItem?.productUrl ?? '');
+    _urlController = TextEditingController(text: _wishItem?.productUrl ?? '');
     _priceController = TextEditingController(
-        text: _wishItem?.estimatedPrice?.toString() ?? '');
-    _storeController =
-        TextEditingController(text: _wishItem?.suggestedStore ?? '');
+      text: _wishItem?.estimatedPrice?.toString() ?? '',
+    );
+    _storeController = TextEditingController(
+      text: _wishItem?.suggestedStore ?? '',
+    );
     _notesController = TextEditingController(text: _wishItem?.notes ?? '');
     _newListController = TextEditingController();
+    _newListController.addListener(_onNewListNameChanged);
     _selectedPriority = _wishItem?.priority ?? 3;
   }
 
@@ -86,6 +97,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
     _priceController.dispose();
     _storeController.dispose();
     _notesController.dispose();
+    _newListController.removeListener(_onNewListNameChanged);
     _newListController.dispose();
     super.dispose();
   }
@@ -97,7 +109,18 @@ class _AddWishScreenState extends State<AddWishScreen> {
       } else {
         _selectedWishlistIds.add(wishlistId);
       }
+      if (_selectedWishlistIds.isNotEmpty && _listSelectionError) {
+        _listSelectionError = false;
+      }
     });
+  }
+
+  void _onNewListNameChanged() {
+    if (_newListController.text.trim().isNotEmpty && _listSelectionError) {
+      setState(() {
+        _listSelectionError = false;
+      });
+    }
   }
 
   Future<void> _saveWish() async {
@@ -106,16 +129,19 @@ class _AddWishScreenState extends State<AddWishScreen> {
     }
 
     final newListName = _newListController.text.trim();
-    // If we are not editing and not adding to a specific list, we must select at least one list or create a new one.
-    if (_wishItem == null &&
-        _wishList == null &&
+    // Si no se informó `wishListId` en el widget, es obligatorio seleccionar al menos una lista o crear una nueva.
+    if (widget.wishListId == null &&
         _selectedWishlistIds.isEmpty &&
         newListName.isEmpty) {
+      setState(() {
+        _listSelectionError = true;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Por favor, selecciona al menos una lista o crea una nueva.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text(
+            'Por favor, selecciona al menos una lista o crea una nueva.',
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
       return;
@@ -153,7 +179,10 @@ class _AddWishScreenState extends State<AddWishScreen> {
       // If we are editing an existing wish
       if (_wishItem != null && _wishList != null && _wishList!.id != null) {
         await wishlistDao.updateItem(
-            _wishList!.id!, wishItem.id, wishItem.toMap());
+          _wishList!.id!,
+          wishItem.id,
+          wishItem.toMap(),
+        );
       } else {
         // Adding a new wish to one or more lists
         final allFutures = <Future>[];
@@ -161,7 +190,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
         if (newWishlistId != null) {
           allListIds.add(newWishlistId);
         }
-        if(_wishList != null && _wishList!.id != null) {
+        if (_wishList != null && _wishList!.id != null) {
           allListIds.add(_wishList!.id!);
         }
         for (final listId in allListIds) {
@@ -172,9 +201,11 @@ class _AddWishScreenState extends State<AddWishScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_wishItem == null
-              ? 'Deseo añadido con éxito'
-              : 'Deseo actualizado con éxito'),
+          content: Text(
+            _wishItem == null
+                ? 'Deseo añadido con éxito'
+                : 'Deseo actualizado con éxito',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -192,202 +223,254 @@ class _AddWishScreenState extends State<AddWishScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = FirebaseAuth.instance;
-    final wishlistsStreamSnapshot =
-        WishlistDao().getWishlistsStreamSnapshot(auth.currentUser!.uid);
+    final wishlistsStreamSnapshot = WishlistDao().getWishlistsStreamSnapshot(
+      auth.currentUser!.uid,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_wishItem == null ? 'Añadir Deseo' : 'Editar Deseo'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveWish,
-          ),
+          IconButton(icon: const Icon(Icons.save), onPressed: _saveWish),
         ],
       ),
       body: _isLoading
-      ? Container(
-          color: Colors.black.withOpacity(0.5),
-          child: Center(
-            child: CircularProgressIndicator(),
-          ),
-        )      
-      : Form(
-        key: _formKey,
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(16.0),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre del Deseo',
-                        hintText: 'Ej: Auriculares Bluetooth',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'El nombre del deseo es obligatorio';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _urlController,
-                      decoration: const InputDecoration(
-                        labelText: 'URL del Producto (Opcional)',
-                        hintText: 'Ej: https://amazon.es/producto',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.url,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _priceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Precio Estimado (€) (Opcional)',
-                        hintText: 'Ej: 79.99',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _storeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Tienda Sugerida (Opcional)',
-                        hintText: 'Ej: Amazon, El Corte Inglés',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _notesController,
-                      decoration: const InputDecoration(
-                        labelText: 'Notas / Detalles (Opcional)',
-                        hintText: 'Ej: Me gustaría en color negro',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Prioridad:',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    Slider(
-                      value: _selectedPriority.toDouble(),
-                      min: 1,
-                      max: 5,
-                      divisions: 4,
-                      label: _getPriorityLabel(_selectedPriority),
-                      onChanged: (double value) {
-                        setState(() {
-                          _selectedPriority = value.round();
-                        });
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('Baja'),
-                        Text('Media'),
-                        Text('Imprescindible'),
-                      ],
-                    ),
-                    if (_wishList == null) ...[
-                      const SizedBox(height: 24),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Añadir a Listas de Deseos',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            if (_wishList == null)
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                sliver: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                  stream: wishlistsStreamSnapshot,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const SliverToBoxAdapter(
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      return SliverToBoxAdapter(
-                        child: Center(
-                          child: Text('Error al cargar listas: ${snapshot.error}'),
+          ? Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : Form(
+              key: _formKey,
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16.0),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre del Deseo',
+                            hintText: 'Ej: Auriculares Bluetooth',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'El nombre del deseo es obligatorio';
+                            }
+                            return null;
+                          },
                         ),
-                      );
-                    }
-
-                    final docs = snapshot.data?.docs ?? [];
-
-                    return SliverList(
-                      delegate: SliverChildListDelegate(
-                        [
-                          if (docs.isNotEmpty) ...[
-                            const Text(
-                              'Selecciona una o más listas:',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 8),
-                            ...docs.map((doc) {
-                              final wishlist = WishList.fromFirestore(doc);
-                              final isSelected =
-                                  _selectedWishlistIds.contains(wishlist.id);
-                              return CheckboxListTile(
-                                title: Text(wishlist.name),
-                                subtitle: Text(wishlist.privacy.name),
-                                value: isSelected,
-                                onChanged: (_) =>
-                                    _toggleWishlistSelection(wishlist.id!),
-                                activeColor: Colors.indigo,
-                              );
-                            }),
-                            const SizedBox(height: 16),
-                            const Divider(),
-                            const SizedBox(height: 16),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _urlController,
+                          decoration: const InputDecoration(
+                            labelText: 'URL del Producto (Opcional)',
+                            hintText: 'Ej: https://amazon.es/producto',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.url,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _priceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Precio Estimado (€) (Opcional)',
+                            hintText: 'Ej: 79.99',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _storeController,
+                          decoration: const InputDecoration(
+                            labelText: 'Tienda Sugerida (Opcional)',
+                            hintText: 'Ej: Amazon, El Corte Inglés',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Notas / Detalles (Opcional)',
+                            hintText: 'Ej: Me gustaría en color negro',
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Prioridad:',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Slider(
+                          value: _selectedPriority.toDouble(),
+                          min: 1,
+                          max: 5,
+                          divisions: 4,
+                          label: _getPriorityLabel(_selectedPriority),
+                          onChanged: (double value) {
+                            setState(() {
+                              _selectedPriority = value.round();
+                            });
+                          },
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            Text('Baja'),
+                            Text('Media'),
+                            Text('Imprescindible'),
                           ],
+                        ),
+                        if (_wishList == null) ...[
+                          const SizedBox(height: 24),
+                          const Divider(),
+                          const SizedBox(height: 16),
                           Text(
-                            docs.isEmpty
-                                ? 'Crea tu primera lista:'
-                                : 'O crea una nueva:',
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                            'Añadir a Listas de Deseos',
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _newListController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nombre de la nueva lista',
-                              hintText: 'Ej: Regalos de cumpleaños',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 24), // Espacio al final
                         ],
+                      ]),
+                    ),
+                  ),
+                  if (_wishList == null)
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      sliver: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: wishlistsStreamSnapshot,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const SliverToBoxAdapter(
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return SliverToBoxAdapter(
+                              child: Center(
+                                child: Text(
+                                  'Error al cargar listas: ${snapshot.error}',
+                                ),
+                              ),
+                            );
+                          }
+
+                          final docs = snapshot.data?.docs ?? [];
+
+                          return SliverList(
+                            delegate: SliverChildListDelegate([
+                              if (docs.isNotEmpty) ...[
+                                const Text(
+                                  'Selecciona una o más listas:',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                ...docs.map((doc) {
+                                  final wishlist = WishList.fromFirestore(doc);
+                                  final isSelected = _selectedWishlistIds
+                                      .contains(wishlist.id);
+                                  return CheckboxListTile(
+                                    title: Text(wishlist.name),
+                                    subtitle: Text(wishlist.privacy.name),
+                                    value: isSelected,
+                                    onChanged: (_) =>
+                                        _toggleWishlistSelection(wishlist.id!),
+                                    activeColor: Colors.indigo,
+                                  );
+                                }),
+                                const SizedBox(height: 16),
+                                const Divider(),
+                                const SizedBox(height: 16),
+                              ],
+                              Text(
+                                docs.isEmpty
+                                    ? 'Crea tu primera lista:'
+                                    : 'O crea una nueva:',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _newListController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nombre de la nueva lista',
+                                  hintText: 'Ej: Regalos de cumpleaños',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                switchInCurve: Curves.easeOut,
+                                switchOutCurve: Curves.easeIn,
+                                transitionBuilder: (child, animation) {
+                                  final offsetAnimation = Tween<Offset>(
+                                    begin: const Offset(0, -0.12),
+                                    end: Offset.zero,
+                                  ).animate(animation);
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: offsetAnimation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: _listSelectionError
+                                    ? Container(
+                                        key: const ValueKey('list_error'),
+                                        margin: const EdgeInsets.only(top: 8),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 8.0,
+                                          horizontal: 12.0,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).appBarTheme.backgroundColor ??
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                          borderRadius:
+                                              BorderRadius.circular(6.0),
+                                        ),
+                                        child: Text(
+                                          'Selecciona o crea una lista para guardar el deseo',
+                                          style: TextStyle(
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).appBarTheme.foregroundColor ??
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                          ),
+                                        ),
+                                      )
+                                    : const SizedBox(
+                                        key: ValueKey('list_empty'),
+                                        height: 0,
+                                      ),
+                              ),
+                              const SizedBox(height: 24), // Espacio al final
+                            ]),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
+                    ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
     );
   }
 
