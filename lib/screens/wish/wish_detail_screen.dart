@@ -6,6 +6,7 @@ import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart'; // Asegúrate de que este import sea correcto
 
+import 'package:wishy/utils/webview_capture.dart';
 import 'package:intl/intl.dart';
 
 class WishDetailScreen extends StatefulWidget {
@@ -157,6 +158,30 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
     );
   }
 
+  Future<void> _updateWishImage(String imageUrl) async {
+    if (_wishList == null || _wishItem == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await WishlistDao().updateItem(
+        _wishList!.id!,
+        _wishItem!.id,
+        {'imageUrl': imageUrl},
+      );
+      _loadListAndWish(); // Recargar para mostrar la nueva imagen
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al actualizar imagen: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,37 +211,103 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Imagen principal del deseo (igual que en el listado)
-                    if (_wishItem!.imageUrl != null &&
-                        _wishItem!.imageUrl!.isNotEmpty)
-                      Hero(
-                        tag: 'wish_image_${_wishItem!.id}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            _wishItem!.imageUrl!,
+                    // Imagen principal del deseo con botones de acción
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        // Contenedor de la imagen
+                        if (_wishItem!.imageUrl != null &&
+                            _wishItem!.imageUrl!.isNotEmpty)
+                          Hero(
+                            tag: 'wish_image_${_wishItem!.id}',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                _wishItem!.imageUrl!,
+                                width: double.infinity,
+                                height: 220,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.broken_image, size: 80),
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
                             width: double.infinity,
                             height: 220,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.broken_image, size: 80),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.image,
+                              size: 80,
+                              color: Colors.grey,
+                            ),
                           ),
-                        ),
-                      )
-                    else
-                      Container(
-                        width: double.infinity,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.image,
-                          size: 80,
-                          color: Colors.grey,
-                        ),
-                      ),
+
+                        // Botones sobre la imagen
+                        if (_wishList?.ownerId ==
+                            UserAuth.instance.getCurrentUser().uid && _wishItem?.productUrl != null)
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                // Botón para capturar desde web
+                                Material(
+                                  color: Colors.white.withOpacity(0.85),
+                                  shape: const CircleBorder(),
+                                  elevation: 2,
+                                  child: IconButton(
+                                    icon: Icon(Icons.open_in_browser,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary),
+                                    tooltip: 'Capturar desde web',
+                                    onPressed: () async {
+                                      final result = await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => WebViewCapture(
+                                              initialUrl:
+                                                  _wishItem?.productUrl),
+                                        ),
+                                      );
+                                      if (result != null && result is String) {
+                                        _updateWishImage(result);
+                                      }
+                                    },
+                                  ),
+                                ),
+                                // const SizedBox(width: 8),
+                                // // Botón para subir imagen
+                                // Material(
+                                //   color: Colors.white.withOpacity(0.85),
+                                //   shape: const CircleBorder(),
+                                //   elevation: 2,
+                                //   child: IconButton(
+                                //     icon: Icon(Icons.camera_alt,
+                                //         color: Theme.of(context)
+                                //             .colorScheme
+                                //             .primary),
+                                //     tooltip: 'Subir foto',
+                                //     onPressed: () {
+                                //       // TODO: Implementar lógica para subir foto
+                                //       ScaffoldMessenger.of(context)
+                                //           .showSnackBar(
+                                //         const SnackBar(
+                                //             content: Text(
+                                //                 'Funcionalidad para subir foto no implementada.')),
+                                //       );
+                                //     },
+                                //   ),
+                                // ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
 
                     // Título Principal

@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:uuid/uuid.dart';
 
 // Widget principal de ejemplo
 class WebViewCapture extends StatefulWidget {
@@ -265,11 +267,11 @@ class _WebViewCaptureState extends State<WebViewCapture> {
         ],
       ),
       // 3. El botón "Obturador"
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _takeScreenshotOfVisibleArea,
-        label: const Text("Capturar Vista Actual"),
-        icon: const Icon(Icons.camera_alt),
-      ),
+      // floatingActionButton: FloatingActionButton.extended(
+      //   onPressed: _takeScreenshotOfVisibleArea,
+      //   label: const Text("Capturar Vista Actual"),
+      //   icon: const Icon(Icons.camera_alt),
+      // ),
     );
   }
 
@@ -330,6 +332,11 @@ class _WebViewCaptureState extends State<WebViewCapture> {
     final byteData = await croppedImage.toByteData(
       format: ui.ImageByteFormat.png,
     );
+
+    // Liberar recursos nativos manualmente para evitar presión en el GC
+    image.dispose();
+    croppedImage.dispose();
+
     return byteData?.buffer.asUint8List();
   }
 
@@ -373,6 +380,43 @@ class _WebViewCaptureState extends State<WebViewCapture> {
     }
   }
 
+  Future<void> _uploadAndReturn(Uint8List imageBytes) async {
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final storageRef = FirebaseStorage.instance.ref();
+      final String fileName = '${const Uuid().v4()}.png';
+      final imageRef = storageRef.child('wish_images/$fileName');
+
+      // Subir imagen
+      await imageRef.putData(
+        imageBytes,
+        SettableMetadata(contentType: 'image/png'),
+      );
+
+      // Obtener URL
+      final downloadUrl = await imageRef.getDownloadURL();
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar carga
+        Navigator.of(context).pop(); // Cerrar diálogo preview
+        Navigator.of(context).pop(downloadUrl); // Volver con resultado
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar carga
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al subir la imagen: $e')),
+        );
+      }
+    }
+  }
+
   // Diálogo simple para mostrar la imagen capturada
   void _showPreviewDialog(Uint8List imageBytes) {
     showDialog(
@@ -395,7 +439,11 @@ class _WebViewCaptureState extends State<WebViewCapture> {
           ),
           actions: [
             TextButton(
-              child: const Text("Cerrar"),
+              child: const Text("Guardar"),
+              onPressed: () => _uploadAndReturn(imageBytes),
+            ),
+            TextButton(
+              child: const Text("Cancelar"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
