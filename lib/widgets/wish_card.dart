@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/screens/wish/i_have_it_screen.dart';
+import 'package:wishy/utils/webview_capture.dart';
 
 class WishCard extends StatefulWidget {
   final WishItem wishItem;
@@ -39,7 +40,8 @@ class _WishCardState extends State<WishCard> {
     _currentPriority = widget.wishItem.priority;
   }
 
-  bool get _isOwner => widget.wishList.ownerId == UserAuth.instance.getCurrentUser().uid;
+  bool get _isOwner =>
+      widget.wishList.ownerId == UserAuth.instance.getCurrentUser().uid;
 
   Future<void> _setPriority(int newPriority) async {
     if (!_isOwner) return;
@@ -55,17 +57,23 @@ class _WishCardState extends State<WishCard> {
         _currentPriority = oldPriority;
         _isUpdating = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lista inválida')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lista inválida')));
       return;
     }
 
     try {
-      await WishlistDao().updateItem(wishlistId, widget.wishItem.id, {'priority': newPriority});
+      await WishlistDao().updateItem(wishlistId, widget.wishItem.id, {
+        'priority': newPriority,
+      });
     } catch (e) {
       setState(() {
         _currentPriority = oldPriority;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al actualizar prioridad: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al actualizar prioridad: $e')),
+      );
     } finally {
       setState(() {
         _isUpdating = false;
@@ -75,7 +83,9 @@ class _WishCardState extends State<WishCard> {
 
   Widget _buildPriorityStars() {
     // Mostrar fila de 5 estrellas; si no es owner, deshabilitadas
-    final Color starColor = Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.primary;
+    final Color starColor =
+        Theme.of(context).appBarTheme.backgroundColor ??
+        Theme.of(context).colorScheme.primary;
     return Row(
       children: List.generate(5, (index) {
         final starIndex = index + 1;
@@ -83,7 +93,9 @@ class _WishCardState extends State<WishCard> {
         return IconButton(
           padding: const EdgeInsets.symmetric(horizontal: 3.0),
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-          onPressed: _isOwner && !_isUpdating ? () => _setPriority(starIndex) : null,
+          onPressed: _isOwner && !_isUpdating
+              ? () => _setPriority(starIndex)
+              : null,
           icon: Icon(
             filled ? Icons.star : Icons.star_border,
             color: starColor,
@@ -108,9 +120,13 @@ class _WishCardState extends State<WishCard> {
         onTap: () async {
           // Si la lista pertenece al usuario actual, usar la ruta de "mis listas"; si no, la de contactos
           if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid) {
-            context.go('/home/wishlists/mine/${wishList.id}/wish/${wishItem.id}/detail');
+            context.go(
+              '/home/wishlists/mine/${wishList.id}/wish/${wishItem.id}/detail',
+            );
           } else {
-            context.go('/home/contacts/${wishList.ownerId}/lists/${wishList.id}/wishes/${wishItem.id}/detail');
+            context.go(
+              '/home/contacts/${wishList.ownerId}/lists/${wishList.id}/wishes/${wishItem.id}/detail',
+            );
           }
         },
         borderRadius: BorderRadius.circular(12),
@@ -122,16 +138,53 @@ class _WishCardState extends State<WishCard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (wishItem.imageUrl != null && wishItem.imageUrl!.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        wishItem.imageUrl!,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.broken_image, size: 80),
+                  if (wishItem.imageUrl != null &&
+                      wishItem.imageUrl!.isNotEmpty)
+                    Hero(
+                      tag: 'wish_image_${wishItem.id}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Stack(
+                          children: [
+                            Image.network(
+                              wishItem.imageUrl!,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.broken_image, size: 80),
+                            ),
+                            Positioned(
+                              right: 6,
+                              bottom: 6,
+                              child: Material(
+                                color: Colors.white.withOpacity(0.95),
+                                shape: const CircleBorder(),
+                                elevation: 2,
+                                // child: InkWell(
+                                //   customBorder: const CircleBorder(),
+                                //   onTap: () {
+                                //     Navigator.of(context).push(
+                                //       MaterialPageRoute(
+                                //         builder: (_) => const WebViewCapture(),
+                                //       ),
+                                //     );
+                                //   },
+                                //   child: Padding(
+                                //     padding: const EdgeInsets.all(6.0),
+                                //     child: Icon(
+                                //       Icons.open_in_browser,
+                                //       size: 18,
+                                //       color: Theme.of(
+                                //         context,
+                                //       ).colorScheme.primary,
+                                //     ),
+                                //   ),
+                                // ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   else
@@ -142,7 +195,46 @@ class _WishCardState extends State<WishCard> {
                         color: Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                      child: Stack(
+                        children: [
+                          const Center(
+                            child: Icon(
+                              Icons.image,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          Positioned(
+                            right: 6,
+                            bottom: 6,
+                            child: Material(
+                              color: Colors.white.withOpacity(0.95),
+                              shape: const CircleBorder(),
+                              elevation: 2,
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const WebViewCapture(),
+                                    ),
+                                  );
+                                },
+                                // child: Padding(
+                                //   padding: const EdgeInsets.all(6.0),
+                                //   child: Icon(
+                                //     Icons.open_in_browser,
+                                //     size: 18,
+                                //     color: Theme.of(
+                                //       context,
+                                //     ).colorScheme.primary,
+                                //   ),
+                                // ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -167,7 +259,8 @@ class _WishCardState extends State<WishCard> {
                               Padding(
                                 padding: const EdgeInsets.only(left: 8.0),
                                 child: Chip(
-                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                   label: const Text('Obtenido'),
                                   avatar: const Icon(Icons.check, size: 16),
                                 ),
@@ -183,23 +276,33 @@ class _WishCardState extends State<WishCard> {
                             child: Text(
                               '${wishItem.estimatedPrice!.toStringAsFixed(2)}€',
                               style: const TextStyle(
-                                  fontSize: 14, color: Colors.green),
+                                fontSize: 14,
+                                color: Colors.green,
+                              ),
                             ),
                           ),
-                        if (wishItem.suggestedStore != null && wishItem.suggestedStore!.isNotEmpty)
+                        if (wishItem.suggestedStore != null &&
+                            wishItem.suggestedStore!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 2.0),
                             child: Text(
                               'Tienda: ${wishItem.suggestedStore}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
                           ),
-                        if (wishItem.notes != null && wishItem.notes!.isNotEmpty)
+                        if (wishItem.notes != null &&
+                            wishItem.notes!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Text(
                               'Notas: ${wishItem.notes}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -226,26 +329,30 @@ class _WishCardState extends State<WishCard> {
                         );
                         if (result != null && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Deseo marcado como "Lo tengo!"')),
+                            const SnackBar(
+                              content: Text('Deseo marcado como "Lo tengo!"'),
+                            ),
                           );
                         }
                       }
                     },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Text('Editar'),
-                      ),
-                      if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid)
-                        const PopupMenuItem<String>(
-                          value: 'ihaveit',
-                          child: Text('Lo tengo!'),
-                        ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Text('Eliminar'),
-                      ),
-                    ],
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          if (wishList.ownerId ==
+                              UserAuth.instance.getCurrentUser().uid)
+                            const PopupMenuItem<String>(
+                              value: 'ihaveit',
+                              child: Text('Lo tengo!'),
+                            ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Eliminar'),
+                          ),
+                        ],
                   ),
                 ],
               ),
@@ -253,12 +360,15 @@ class _WishCardState extends State<WishCard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (wishItem.productUrl != null && wishItem.productUrl!.isNotEmpty)
+                  if (wishItem.productUrl != null &&
+                      wishItem.productUrl!.isNotEmpty)
                     ElevatedButton.icon(
                       onPressed: () async {
                         if (!await launchUrl(Uri.parse(wishItem.productUrl!))) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('No se pudo abrir el enlace.')),
+                            const SnackBar(
+                              content: Text('No se pudo abrir el enlace.'),
+                            ),
                           );
                         }
                       },
@@ -272,7 +382,6 @@ class _WishCardState extends State<WishCard> {
                     ),
                 ],
               ),
-
             ],
           ),
         ),

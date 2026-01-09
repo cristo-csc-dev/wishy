@@ -25,10 +25,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   late DateTime _selectedEventDate;
   EventType _selectedEventType = EventType.other;
   List<String> _invitedUserIds = []; // IDs de los invitados
-  // Lista de IDs de los contactos seleccionados
-  final List<String> _selectedContactIds = [];
-  // NUEVO: Lista de IDs de invitados seleccionados para un evento
-  final List<String> _selectedInvitationIds = [];
+
 
   @override
   void initState() {
@@ -136,7 +133,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         'description': _descriptionController.text,
         'eventDate': _selectedEventDate.toIso8601String(),
         'type': _selectedEventType.toString().split('.').last,
-        'invitedUserIds': _selectedInvitationIds,
+        'invitedUserIds': _invitedUserIds,
         'ownerId': userId, // En una app real, obtén el ID del usuario logueado
         'participantUserIds': widget.event?.participantUserIds ?? [],
         'userListsInEvent': widget.event?.userListsInEvent ?? {},

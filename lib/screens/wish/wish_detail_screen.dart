@@ -5,10 +5,10 @@ import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart'; // Asegúrate de que este import sea correcto
+
 import 'package:intl/intl.dart';
 
 class WishDetailScreen extends StatefulWidget {
-  
   final String wishItemId;
   final String wishListId;
   final String? userId;
@@ -19,18 +19,17 @@ class WishDetailScreen extends StatefulWidget {
     required this.wishListId,
     required this.wishItemId,
   });
-  
+
   @override
   State<WishDetailScreen> createState() => _WishDetailScreenState();
 }
 
 class _WishDetailScreenState extends State<WishDetailScreen> {
-
   bool _isLoading = false;
   WishItem? _wishItem;
   WishList? _wishList;
 
-   @override
+  @override
   void initState() {
     super.initState();
     _loadListAndWish();
@@ -40,8 +39,14 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
     setState(() {
       _isLoading = true;
     });
-    var wishListSnapshot = await WishlistDao().getContactWishlistById(widget.wishListId, widget.userId);
-    var wishItem = await wishListSnapshot.reference.collection("items").doc(widget.wishItemId).get();
+    var wishListSnapshot = await WishlistDao().getContactWishlistById(
+      widget.wishListId,
+      widget.userId,
+    );
+    var wishItem = await wishListSnapshot.reference
+        .collection("items")
+        .doc(widget.wishItemId)
+        .get();
     setState(() {
       _wishList = WishList.fromFirestore(wishListSnapshot);
       _wishItem = WishItem.fromFirestore(wishItem);
@@ -79,29 +84,30 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.black54,
-              ),
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.black54,
             ),
+          ),
           const SizedBox(height: 4),
           InkWell(
             onTap: () async {
               if (!isUrl) return;
-                final uri = Uri.parse(value);
-                  await launchUrl(uri);
-              },
-            child: 
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: isUrl ? Colors.blue.shade700 : Colors.black87,
-                  decoration: isUrl ? TextDecoration.underline : TextDecoration.none,
-                ),
+              final uri = Uri.parse(value);
+              await launchUrl(uri);
+            },
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                color: isUrl ? Colors.blue.shade700 : Colors.black87,
+                decoration: isUrl
+                    ? TextDecoration.underline
+                    : TextDecoration.none,
               ),
+            ),
           ),
           const Divider(height: 16),
         ],
@@ -140,7 +146,10 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
     return Chip(
       label: Text(
         'Prioridad: $label',
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       backgroundColor: color,
       avatar: const Icon(Icons.star, color: Colors.white, size: 18),
@@ -159,96 +168,128 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
               icon: const Icon(Icons.edit),
               onPressed: () {
                 // Usamos la ruta de edición dentro de "mis listas"
-                context.go('/home/wishlists/mine/${widget.wishListId}/wish/${widget.wishItemId}/edit');
+                context.go(
+                  '/home/wishlists/mine/${widget.wishListId}/wish/${widget.wishItemId}/edit',
+                );
               },
             ),
         ],
       ),
       body: _isLoading || _wishItem == null || _wishList == null
           ? Container(
-            color: Colors.black.withOpacity(0.5),
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
-          )    
+              color: Colors.black.withOpacity(0.5),
+              child: Center(child: CircularProgressIndicator()),
+            )
           : SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título Principal
-                  Text(
-                    _wishItem!.name,
-                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                          fontWeight: FontWeight.bold,
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Imagen principal del deseo (igual que en el listado)
+                    if (_wishItem!.imageUrl != null &&
+                        _wishItem!.imageUrl!.isNotEmpty)
+                      Hero(
+                        tag: 'wish_image_${_wishItem!.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            _wishItem!.imageUrl!,
+                            width: double.infinity,
+                            height: 220,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.broken_image, size: 80),
+                          ),
                         ),
-                  ),
-                  const SizedBox(height: 10),
+                      )
+                    else
+                      Container(
+                        width: double.infinity,
+                        height: 220,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.image,
+                          size: 80,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    const SizedBox(height: 16),
 
-                  // Etiqueta de Prioridad
-                  _buildPriorityTag(_wishItem!.priority),
-                  const SizedBox(height: 20),
-
-                  // Información del Precio
-                  _buildDetailItem(
-                    'Precio Estimado',
-                    _formatPrice(_wishItem!.estimatedPrice),
-                  ),
-
-                  // Información de la Tienda
-                  _buildDetailItem(
-                    'Tienda Sugerida',
-                    _wishItem!.suggestedStore,
-                  ),
-
-                  // URL del Producto
-                  _buildDetailItem(
-                    'Enlace del Producto',
-                    _wishItem!.productUrl,
-                    isUrl: true,
-                  ),
-
-                  // Lista a la que pertenece
-                  _buildDetailItem(
-                    'Perteneciente a la Lista',
-                  _wishList!.name,
-                  ),
-
-                  // Notas / Detalles
-                  if (_wishItem!.notes != null && _wishItem!.notes!.isNotEmpty) ...[
-                    const SizedBox(height: 10),
+                    // Título Principal
                     Text(
-                      "Notas / Detalles",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
+                      _wishItem!.name,
+                      style: Theme.of(context).textTheme.headlineMedium!
+                          .copyWith(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Text(
-                        _wishItem!.notes!,
-                        style: const TextStyle(fontSize: 16, height: 1.5),
-                      ),
+                    const SizedBox(height: 10),
+
+                    // Etiqueta de Prioridad
+                    _buildPriorityTag(_wishItem!.priority),
+                    const SizedBox(height: 20),
+
+                    // Información del Precio
+                    _buildDetailItem(
+                      'Precio Estimado',
+                      _formatPrice(_wishItem!.estimatedPrice),
                     ),
+
+                    // Información de la Tienda
+                    _buildDetailItem(
+                      'Tienda Sugerida',
+                      _wishItem!.suggestedStore,
+                    ),
+
+                    // URL del Producto
+                    _buildDetailItem(
+                      'Enlace del Producto',
+                      _wishItem!.productUrl,
+                      isUrl: true,
+                    ),
+
+                    // Lista a la que pertenece
+                    _buildDetailItem(
+                      'Perteneciente a la Lista',
+                      _wishList!.name,
+                    ),
+
+                    // Notas / Detalles
+                    if (_wishItem!.notes != null &&
+                        _wishItem!.notes!.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        "Notas / Detalles",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          _wishItem!.notes!,
+                          style: const TextStyle(fontSize: 16, height: 1.5),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+
+                    // Aquí podrías añadir un botón para volver a editar si lo deseas
                   ],
-                  const SizedBox(height: 20),
-                  
-                  // Aquí podrías añadir un botón para volver a editar si lo deseas
-                  
-                ],
+                ),
               ),
             ),
-          ),
     );
   }
 }

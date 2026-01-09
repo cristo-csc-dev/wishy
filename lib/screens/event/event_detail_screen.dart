@@ -103,7 +103,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     itemBuilder: (context, index) {
                       final list = availableLists[index];
                       return ListTile(
-                        title: Text(list.name ?? '-'),
+                        title: Text(list.name),
                         onTap: () => Navigator.pop(context, list),
                       );
                     },
