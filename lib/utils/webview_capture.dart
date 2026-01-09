@@ -428,9 +428,7 @@ class _WebViewCaptureState extends State<WebViewCapture> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  "Esta es la imagen exacta de lo que estabas viendo:",
-                ),
+                
                 const SizedBox(height: 10),
                 // Mostrar la imagen desde la memoria
                 Image.memory(imageBytes),
