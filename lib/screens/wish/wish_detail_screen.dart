@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/auth/user_auth.dart';
@@ -166,6 +167,17 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
     });
 
     try {
+      // Intentar borrar la imagen anterior si existe y es de Firebase Storage
+      if (_wishItem!.imageUrl != null && _wishItem!.imageUrl!.isNotEmpty) {
+        try {
+          final ref = FirebaseStorage.instance.refFromURL(_wishItem!.imageUrl!);
+          await ref.delete();
+        } catch (e) {
+          // Ignoramos errores si la imagen no es de Firebase o ya no existe
+          debugPrint('No se pudo borrar la imagen anterior: $e');
+        }
+      }
+
       await WishlistDao().updateItem(
         _wishList!.id!,
         _wishItem!.id,
@@ -217,7 +229,8 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                       children: [
                         // Contenedor de la imagen
                         if (_wishItem!.imageUrl != null &&
-                            _wishItem!.imageUrl!.isNotEmpty)
+                            _wishItem!.imageUrl!.isNotEmpty &&
+                            _wishItem!.imageUrl!.startsWith('http'))
                           Hero(
                             tag: 'wish_image_${_wishItem!.id}',
                             child: ClipRRect(
@@ -228,7 +241,19 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                                 height: 220,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.broken_image, size: 80),
+                                    Container(
+                                  width: double.infinity,
+                                  height: 220,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.image,
+                                    size: 80,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                               ),
                             ),
                           )

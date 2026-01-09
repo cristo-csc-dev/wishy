@@ -71,9 +71,11 @@ class _WishCardState extends State<WishCard> {
       setState(() {
         _currentPriority = oldPriority;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al actualizar prioridad: $e')),
-      );
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al actualizar prioridad: $e')),
+        );
+      }
     } finally {
       setState(() {
         _isUpdating = false;
@@ -139,7 +141,8 @@ class _WishCardState extends State<WishCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (wishItem.imageUrl != null &&
-                      wishItem.imageUrl!.isNotEmpty)
+                      wishItem.imageUrl!.isNotEmpty &&
+                      wishItem.imageUrl!.startsWith('http'))
                     Hero(
                       tag: 'wish_image_${wishItem.id}',
                       child: ClipRRect(
@@ -152,7 +155,15 @@ class _WishCardState extends State<WishCard> {
                               height: 80,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.broken_image, size: 80),
+                                  Container(
+                                width: 80,
+                                height: 80,
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: Icon(Icons.image,
+                                      size: 40, color: Colors.grey),
+                                ),
+                              ),
                             ),
                             Positioned(
                               right: 6,
