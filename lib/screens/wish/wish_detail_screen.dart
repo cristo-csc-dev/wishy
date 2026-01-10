@@ -292,15 +292,16 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                                             .primary),
                                     tooltip: 'Capturar desde web',
                                     onPressed: () async {
-                                      final result = await Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => WebViewCapture(
-                                              initialUrl:
-                                                  _wishItem?.productUrl),
-                                        ),
-                                      );
-                                      if (result != null && result is String) {
-                                        _updateWishImage(result);
+                                      if(_wishItem != null && _wishItem!.productUrl != null && _wishItem!.productUrl!.isNotEmpty) {
+                                        final result = await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => WebViewCapture(
+                                                initialUrl: _wishItem!.productUrl!),
+                                          ),
+                                        );
+                                        if (result != null && result is String) {
+                                          _updateWishImage(result);
+                                        }
                                       }
                                     },
                                   ),

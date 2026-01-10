@@ -9,9 +9,9 @@ import 'package:uuid/uuid.dart';
 
 // Widget principal de ejemplo
 class WebViewCapture extends StatefulWidget {
-  final String? initialUrl;
+  final String initialUrl;
 
-  const WebViewCapture({super.key, this.initialUrl});
+  const WebViewCapture({super.key, required this.initialUrl});
 
   @override
   State<WebViewCapture> createState() => _WebViewCaptureState();
@@ -37,7 +37,6 @@ class _WebViewCaptureState extends State<WebViewCapture> {
   Offset? _baseFocalPoint;
   bool _isMoving = false;
   bool _isResizing = false;
-  bool _initialSelectionSet = false;
 
   @override
   Widget build(BuildContext context) {
@@ -79,9 +78,26 @@ class _WebViewCaptureState extends State<WebViewCapture> {
               icon: const Icon(Icons.crop_free),
               tooltip: 'Seleccionar región',
               onPressed: () {
-                setState(() {
-                  _selectionMode = true;
-                });
+                final renderBox = _webViewKey.currentContext
+                    ?.findRenderObject() as RenderBox?;
+                if (renderBox != null && renderBox.hasSize) {
+                  final size = renderBox.size;
+                  final width = size.width * 0.5;
+                  final height = size.height * 0.2;
+                  final rect = Rect.fromCenter(
+                    center: size.center(Offset.zero),
+                    width: width,
+                    height: height,
+                  );
+                  setState(() {
+                    _selectionMode = true;
+                    _selectionRectLogical = rect;
+                  });
+                } else {
+                  setState(() {
+                    _selectionMode = true;
+                  });
+                }
               },
             ),
             // Botón extra para recargar si es necesario
@@ -102,8 +118,7 @@ class _WebViewCaptureState extends State<WebViewCapture> {
             child: InAppWebView(
               initialUrlRequest: URLRequest(
                 url: WebUri(
-                  widget.initialUrl ??
-                      "https://es.wikipedia.org/wiki/Flutter_(software)",
+                  widget.initialUrl!,
                 ),
               ),
               // Configuración inicial para permitir zoom y scroll fluido
@@ -127,29 +142,6 @@ class _WebViewCaptureState extends State<WebViewCapture> {
                 setState(() {
                   progress = count / 100;
                 });
-              },
-              onLoadStop: (controller, url) {
-                if (!_initialSelectionSet && mounted) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    final renderBox = _webViewKey.currentContext
-                        ?.findRenderObject() as RenderBox?;
-                    if (renderBox != null && renderBox.hasSize) {
-                      final size = renderBox.size;
-                      final width = size.width * 0.5;
-                      final height = size.height * 0.2;
-                      final rect = Rect.fromCenter(
-                        center: size.center(Offset.zero),
-                        width: width,
-                        height: height,
-                      );
-                      setState(() {
-                        _selectionMode = true;
-                        _selectionRectLogical = rect;
-                        _initialSelectionSet = true;
-                      });
-                    }
-                  });
-                }
               },
             ),
           ),

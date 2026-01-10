@@ -113,6 +113,8 @@ class _WishCardState extends State<WishCard> {
   Widget build(BuildContext context) {
     final wishItem = widget.wishItem;
     final wishList = widget.wishList;
+    bool showOptions = 
+        (wishList.ownerId == UserAuth.instance.getCurrentUser().uid);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -225,9 +227,13 @@ class _WishCardState extends State<WishCard> {
                               child: InkWell(
                                 customBorder: const CircleBorder(),
                                 onTap: () {
+                                  final url = (wishItem.productUrl != null &&
+                                          wishItem.productUrl!.isNotEmpty)
+                                      ? wishItem.productUrl!
+                                      : 'https://www.google.com/search?q=${Uri.encodeComponent(wishItem.name)}';
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (_) => const WebViewCapture(),
+                                      builder: (_) => WebViewCapture(initialUrl: url),
                                     ),
                                   );
                                 },
@@ -321,50 +327,52 @@ class _WishCardState extends State<WishCard> {
                       ],
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') widget.onEdit?.call();
-                      if (value == 'delete') widget.onDelete?.call();
-                      if (value == 'ihaveit') {
-                        // Abrir formulario para marcar como 'Lo tengo!'
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => IHaveItScreen(
-                              sourceUserId: wishList.ownerId,
-                              wishListId: wishList.id,
-                              wishItemId: wishItem.id,
-                              wishItemName: wishItem.name,
-                            ),
-                          ),
-                        );
-                        if (result != null && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Deseo marcado como "Lo tengo!"'),
+                  if(showOptions)...[
+                    PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'edit') widget.onEdit?.call();
+                        if (value == 'delete') widget.onDelete?.call();
+                        if (value == 'ihaveit') {
+                          // Abrir formulario para marcar como 'Lo tengo!'
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => IHaveItScreen(
+                                sourceUserId: wishList.ownerId,
+                                wishListId: wishList.id,
+                                wishItemId: wishItem.id,
+                                wishItemName: wishItem.name,
+                              ),
                             ),
                           );
+                          if (result != null && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Deseo marcado como "Lo tengo!"'),
+                              ),
+                            );
+                          }
                         }
-                      }
-                    },
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Text('Editar'),
-                          ),
-                          if (wishList.ownerId ==
-                              UserAuth.instance.getCurrentUser().uid)
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
                             const PopupMenuItem<String>(
-                              value: 'ihaveit',
-                              child: Text('Lo tengo!'),
+                              value: 'edit',
+                              child: Text('Editar'),
                             ),
-                          const PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Text('Eliminar'),
-                          ),
-                        ],
-                  ),
+                            if (wishList.ownerId ==
+                                UserAuth.instance.getCurrentUser().uid)
+                              const PopupMenuItem<String>(
+                                value: 'ihaveit',
+                                child: Text('Lo tengo!'),
+                              ),
+                            const PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Text('Eliminar'),
+                            ),
+                          ],
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 10),
