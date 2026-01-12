@@ -76,6 +76,9 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           'createdAt': FieldValue.serverTimestamp(),
           'itemCount': _wishList?.itemCount ?? 0,
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lista ${_nameController.text} ${_wishList == null ? 'creada' : 'actualizada'}')),
+        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error de autenticación: $e')),

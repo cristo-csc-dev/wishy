@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/utils/message_utils.dart';
@@ -228,10 +229,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showCreateUserScreen(BuildContext context) async {
-    Navigator.push(context,
-      MaterialPageRoute(
-        builder: (context) => const CreateUserScreen(),
-      ),
-    );
+    context.go('contacts/add');
   }
 }

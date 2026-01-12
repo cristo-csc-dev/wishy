@@ -117,11 +117,11 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: (_selectedIndex == 0)? FloatingActionButton(
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
-          final newListName = await context.push('/home/wishlists/mine/add'); // Volver a Home después de crear la lista
-          if(context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Lista "$newListName" creada.')));
-          }
+          context.go('/home/wishlists/mine/add'); // Volver a Home después de crear la lista
+          // if(context.mounted) {
+          //   ScaffoldMessenger.of(context).showSnackBar(
+          //       SnackBar(content: Text('Lista "$newListName" creada.')));
+          // }
         },
         child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico
       ): null,
@@ -272,10 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Compartir lista "${list.name}"')));
                           }
                           if (value == 'add') {
-                            final newWish = await Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => AddWishScreen(wishListId: list.id)),
-                            );
+                            final newWish = await context.push('/home/wishlists/mine/${list.id}/wish/add');
                             if (newWish != null && newWish is WishItem) {
                               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));
                             }
@@ -350,12 +347,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: InkWell(
                 onTap: () {
                   context.go('/home/contacts/${contact.id}');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FriendListsOverviewScreen(contactId: contact.id),
-                    ),
-                  );
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
