@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:wishy/screens/wish/wish_detail_screen.dart';
@@ -78,6 +79,7 @@ class IHaveItDetailScreen extends StatelessWidget {
                     if (originalOwner.isNotEmpty && originalWishlist.isNotEmpty && originalWish.isNotEmpty)...[
                       ElevatedButton.icon(
                         onPressed: () {
+                          context.go('/home/ihaveit/${claimRef.id}/detail/${originalWishlist}/${originalWish}');
                           Navigator.push(
                             context,
                             MaterialPageRoute(

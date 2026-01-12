@@ -125,10 +125,7 @@ class ContactsListScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           // Si estamos en la pestaña de eventos, el FAB crea un evento
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateContactRequestScreen()),
-          );
+          context.go('/home/contacts/add');
         },
         child: Icon(Icons.add), // Icono dinámico
       )

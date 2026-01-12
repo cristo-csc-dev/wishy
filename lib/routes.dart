@@ -78,6 +78,16 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
                   .doc(claimId);
                 return IHaveItDetailScreen(claimRef: claimRef);
               },
+              routes: [
+                GoRoute(
+                  path: '/detail/:wishListId/:wishItemId',
+                  builder: (context, state) {
+                    final wishListId = state.pathParameters['wishListId'] ?? '';
+                    final wishItemId = state.pathParameters['wishId'] ?? '';
+                    return WishDetailScreen(wishListId: wishListId, wishItemId: wishItemId);
+                  },
+                ),
+              ],
             ),
           ],
         ),
