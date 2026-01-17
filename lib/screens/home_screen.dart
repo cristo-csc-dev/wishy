@@ -31,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _sharedLink = "{}";
   static const platform = MethodChannel('com.wishysa.wishy/channel');
   StreamSubscription? _notificationCountSubscription;
+  StreamSubscription<User?>? _userChangesSubscription;
 
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -43,6 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchNotificationsCount();
     platform.setMethodCallHandler(_handleMethodCalls);
+    _userChangesSubscription = _auth.userChanges().listen((user) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -502,6 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _notificationCountSubscription?.cancel(); 
+    _userChangesSubscription?.cancel();
     super.dispose();
   }
 }

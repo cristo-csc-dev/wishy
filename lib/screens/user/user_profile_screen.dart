@@ -1,5 +1,9 @@
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:wishy/dao/user_dao.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -15,6 +19,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final _displayEmailController = TextEditingController();
   final _photoUrlController = TextEditingController();
   final _auth = FirebaseAuth.instance;
+  final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
   @override
@@ -49,6 +54,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           // await user.updateEmail(_displayEmailController.text.trim());
           await user.updatePhotoURL(_photoUrlController.text.trim());
 
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+            'photoUrl': _photoUrlController.text.trim(),
+          }, SetOptions(merge: true));
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Perfil actualizado con éxito')),
@@ -68,6 +77,106 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         }
       }
     }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        _uploadImage(File(pickedFile.path));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al seleccionar imagen: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadImage(File imageFile) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final Reference userFolderRef = FirebaseStorage.instance
+          .ref()
+          .child('user_profiles')
+          .child(user.uid);
+
+      // Borrar imágenes antiguas antes de subir la nueva
+      try {
+        final ListResult result = await userFolderRef.listAll();
+        for (final Reference ref in result.items) {
+          await ref.delete();
+        }
+      } catch (e) {
+        debugPrint('Error al limpiar imágenes antiguas: $e');
+      }
+
+      final String fileName = 'profile_${user.uid}.jpg';
+      final Reference storageRef = userFolderRef.child(fileName);
+
+      final UploadTask uploadTask = storageRef.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'photoUrl': downloadUrl,
+      }, SetOptions(merge: true));
+
+      setState(() {
+        _photoUrlController.text = downloadUrl;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al subir imagen: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Galería'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Cámara'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -90,14 +199,31 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             children: <Widget>[
               // Avatar del usuario
               Center(
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
-                      ? NetworkImage(user.photoURL!)
-                      : null,
-                  child: user.photoURL == null || user.photoURL!.isEmpty
-                      ? const Icon(Icons.person, size: 50)
-                      : null,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundImage: _photoUrlController.text.isNotEmpty
+                          ? NetworkImage(_photoUrlController.text)
+                          : null,
+                      child: _photoUrlController.text.isEmpty
+                          ? const Icon(Icons.person, size: 50)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 18,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.camera_alt, size: 20, color: Colors.blueGrey),
+                          onPressed: _showImageSourceActionSheet,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
@@ -60,13 +61,7 @@ class ContactsListScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            child: Text(
-                              displayName.isNotEmpty ? displayName.substring(0, 2) : '',
-                              style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-                            ),
-                          ), // Usar un icono de la lista
+                          _ContactAvatar(contactId: contact.id, displayName: displayName),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -129,6 +124,47 @@ class ContactsListScreen extends StatelessWidget {
         },
         child: Icon(Icons.add), // Icono dinámico
       )
+    );
+  }
+}
+
+class _ContactAvatar extends StatelessWidget {
+  final String contactId;
+  final String displayName;
+
+  const _ContactAvatar({
+    required this.contactId,
+    required this.displayName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: FirebaseStorage.instance
+          .ref()
+          .child('user_profiles')
+          .child(contactId)
+          .child('profile_$contactId.jpg')
+          .getDownloadURL(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return CircleAvatar(
+            backgroundImage: NetworkImage(snapshot.data!),
+          );
+        }
+        return CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          child: Text(
+            displayName.isNotEmpty
+                ? (displayName.length > 1 ? displayName.substring(0, 2) : displayName).toUpperCase()
+                : '',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
     );
   }
 }
