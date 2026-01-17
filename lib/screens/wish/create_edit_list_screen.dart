@@ -5,7 +5,8 @@ import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
-import 'package:uuid/uuid.dart'; // Añadir al pubspec.yaml: uuid: ^4.0.0
+import 'package:uuid/uuid.dart';
+import 'package:wishy/static/available_wishlist_icons.dart'; // Añadir al pubspec.yaml: uuid: ^4.0.0
 
 class CreateEditListScreen extends StatefulWidget {
   final String? wishListId; // Si es null, es una nueva lista; si no, es para editar
@@ -24,6 +25,11 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   ListPrivacy _selectedPrivacy = ListPrivacy.private;
   List<String> _selectedContactIds = [];
   List<Contact> _contacts = [];
+  int? _selectedIconCodePoint;
+  int? _selectedColorValue;
+  String? _selectedAssetPath;
+  String? _selectedKey;
+  final ScrollController _iconScrollController = ScrollController();
 
   @override
   void initState() {
@@ -38,8 +44,18 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
     var contacts = await UserDao().getAcceptedContacts();
     WishList? wishList = null;
     if(widget.wishListId != null) {
-      wishList = WishList.fromFirestore(
-        await WishlistDao().getWishlistById(widget.wishListId!));
+      final doc = await WishlistDao().getWishlistById(widget.wishListId!);
+      wishList = WishList.fromFirestore(doc);
+      final data = doc.data() as Map<String, dynamic>?;
+      if (data != null && data.containsKey('icon')) {
+        _selectedIconCodePoint = data['icon'];
+      }
+      if (data != null && data.containsKey('iconColor')) {
+        _selectedColorValue = data['iconColor'];
+      }
+      if (data != null && data.containsKey('iconAsset')) {
+        _selectedAssetPath = data['iconAsset'];
+      }
     }
     setState(() {
       _contacts = contacts;
@@ -55,17 +71,22 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _iconScrollController.dispose();
     super.dispose();
   }
 
-  void _saveList() async {
+  Future<void> _saveList() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
       final String id = widget.wishListId ?? const Uuid().v4();
 
       try {
         if (!UserAuth.instance.isUserAuthenticatedAndVerified()) {
           throw Exception('Usuario no autenticado');
         }
+
         WishlistDao().createOrUpdateWishlist(id, {
           'name': _nameController.text,
           'privacy': _selectedPrivacy.toString().split('.').last,
@@ -74,7 +95,11 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
               : [],
           'ownerId': UserAuth.instance.getCurrentUser().uid,
           'createdAt': FieldValue.serverTimestamp(),
-          'itemCount': _wishList?.itemCount ?? 0,
+          'iconKey': _selectedKey?? "",
+          // 'icon': _selectedAssetPath == null ? _selectedIconCodePoint : null,
+          // 'iconColor': _selectedAssetPath == null ? _selectedColorValue : null,
+          // 'iconAsset': _selectedAssetPath,
+          // 'itemCount': _wishList?.itemCount ?? 0,
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lista ${_nameController.text} ${_wishList == null ? 'creada' : 'actualizada'}')),
@@ -87,6 +112,16 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
       }
 
       Navigator.pop(context, _nameController.text); // Devuelve la nueva/actualizada lista
+    }
+  }
+
+  void _scrollIcons(double offset) {
+    if (_iconScrollController.hasClients) {
+      _iconScrollController.animateTo(
+        _iconScrollController.offset + offset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -158,6 +193,95 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: _selectedAssetPath != null 
+                      ? Colors.transparent 
+                      : (_selectedColorValue != null ? Color(_selectedColorValue!).withOpacity(0.1) : Theme.of(context).colorScheme.primary.withOpacity(0.1)),
+                  backgroundImage: _selectedAssetPath != null ? AssetImage(_selectedAssetPath!) : null,
+                  child: _selectedAssetPath == null 
+                      ? Icon(
+                          Icons.card_giftcard,
+                          size: 40,
+                          color: _selectedColorValue != null ? Color(_selectedColorValue!) : Theme.of(context).colorScheme.primary,
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Center(child: Text('Elige un icono', style: TextStyle(color: Colors.grey))),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => _scrollIcons(-150),
+                  ),
+                  Expanded(
+                    child: SizedBox(
+                      height: 60,
+                      child: ListView.builder(
+                        controller: _iconScrollController,
+                        scrollDirection: Axis.horizontal,
+                        itemCount: availableIcons.length,
+                        itemBuilder: (context, index) {
+                          final entry = availableIcons.entries.elementAt(index);
+                          final item = entry.value;
+                          final type = item['type'];
+                          final isAsset = type == 'asset';
+                          
+                          final isSelected = isAsset 
+                              ? _selectedAssetPath == item['path']
+                              : _selectedIconCodePoint == (item['icon'] as IconData).codePoint;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (isAsset) {
+                                    _selectedKey = entry.key;
+                                    _selectedAssetPath = item['path'];
+                                    _selectedIconCodePoint = null;
+                                    _selectedColorValue = null;
+                                  } else {
+                                    _selectedAssetPath = null;
+                                    _selectedIconCodePoint = (item['icon'] as IconData).codePoint;
+                                    _selectedColorValue = (item['color'] as Color).value;
+                                  }
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(50),
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: isSelected ? (isAsset ? Colors.grey.withOpacity(0.2) : (item['color'] as Color).withOpacity(0.2)) : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                  border: isSelected ? Border.all(color: isAsset ? Colors.grey : (item['color'] as Color), width: 2) : null,
+                                ),
+                                child: isAsset
+                                    ? Padding(padding: const EdgeInsets.all(8.0), child: Image.asset(item['path']))
+                                    : Icon(
+                                        item['icon'] as IconData,
+                                        color: isSelected ? (item['color'] as Color) : Colors.grey,
+                                        size: 30,
+                                      ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: () => _scrollIcons(150),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(

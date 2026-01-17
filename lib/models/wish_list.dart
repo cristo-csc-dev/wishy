@@ -30,13 +30,15 @@ class WishList {
   int itemCount = 0;
   String ownerId;
   List<String> sharedWithContactIds = [];
+  String? iconKey;
 
   WishList({
     required this.name, 
     required this.privacy, 
     required this.ownerId, 
     this.sharedWithContactIds = const [], 
-    this.itemCount = 0  
+    this.itemCount = 0,
+    this.iconKey,
   });
 
   factory WishList.fromFirestore(DocumentSnapshot doc) {
@@ -48,6 +50,7 @@ class WishList {
           : [],
       ownerId: doc.get('ownerId'),
       itemCount: doc.get('itemCount') ?? 0,
+      iconKey: (doc.data() as Map<String,dynamic>).containsKey('iconKey')? doc.get('iconKey') : null,
     );
     result.id = doc.id;
     return result;

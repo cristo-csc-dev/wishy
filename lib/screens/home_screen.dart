@@ -18,6 +18,7 @@ import 'package:wishy/models/wish_list.dart';
 import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
+import 'package:wishy/static/available_wishlist_icons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -250,9 +251,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       CircleAvatar(
                         backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        child: list.name.isNotEmpty
-                            ? Text(list.name.substring(0, 2), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold))
-                            : const Icon(Icons.card_giftcard, color: Colors.indigo),
+                        backgroundImage: (list.iconKey != null && availableIcons.containsKey(list.iconKey))
+                            ? AssetImage(availableIcons[list.iconKey]!['path'] as String)
+                            : null,
+                        child: (list.iconKey == null || !availableIcons.containsKey(list.iconKey))
+                            ? (list.name.isNotEmpty
+                                ? Text((list.name.length > 1 ? list.name.substring(0, 2) : list.name).toUpperCase(),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold))
+                                : const Icon(Icons.card_giftcard, color: Colors.indigo))
+                            : null,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
