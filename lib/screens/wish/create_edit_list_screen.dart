@@ -96,10 +96,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           'ownerId': UserAuth.instance.getCurrentUser().uid,
           'createdAt': FieldValue.serverTimestamp(),
           'iconKey': _selectedKey?? "",
-          // 'icon': _selectedAssetPath == null ? _selectedIconCodePoint : null,
-          // 'iconColor': _selectedAssetPath == null ? _selectedColorValue : null,
-          // 'iconAsset': _selectedAssetPath,
-          // 'itemCount': _wishList?.itemCount ?? 0,
+          'itemCount': _wishList?.itemCount ?? 0,
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lista ${_nameController.text} ${_wishList == null ? 'creada' : 'actualizada'}')),
