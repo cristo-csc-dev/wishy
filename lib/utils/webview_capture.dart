@@ -7,6 +7,8 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
 
+enum _ResizeHandle { topLeft, topRight, bottomLeft, bottomRight, center, none }
+
 // Widget principal de ejemplo
 class WebViewCapture extends StatefulWidget {
   final String initialUrl;
@@ -32,11 +34,21 @@ class _WebViewCaptureState extends State<WebViewCapture> {
   Offset? _dragStartLogical;
   Rect? _selectionRectLogical;
 
+  _ResizeHandle _activeHandle = _ResizeHandle.none;
+  final double _handleHitTestSize = 30.0;
+
   // Variables para manipulación de la selección (mover/escalar)
   Rect? _baseRectForResize;
   Offset? _baseFocalPoint;
-  bool _isMoving = false;
-  bool _isResizing = false;
+
+  _ResizeHandle _getHandleAt(Offset local, Rect rect) {
+    if ((local - rect.topLeft).distance <= _handleHitTestSize) return _ResizeHandle.topLeft;
+    if ((local - rect.topRight).distance <= _handleHitTestSize) return _ResizeHandle.topRight;
+    if ((local - rect.bottomLeft).distance <= _handleHitTestSize) return _ResizeHandle.bottomLeft;
+    if ((local - rect.bottomRight).distance <= _handleHitTestSize) return _ResizeHandle.bottomRight;
+    if (rect.contains(local)) return _ResizeHandle.center;
+    return _ResizeHandle.none;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,29 +174,38 @@ class _WebViewCaptureState extends State<WebViewCapture> {
                   if (box == null) return;
                   final local = box.globalToLocal(details.focalPoint);
 
-                  if (details.pointerCount > 1) {
-                    // Pinch: Modo Escalar (Cerrar/Abrir perspectiva)
-                    _isResizing = true;
-                    _isMoving = false;
-                    // Si no hay selección, crear una por defecto centrada
-                    _selectionRectLogical ??=
-                        Rect.fromCenter(center: local, width: 200, height: 200);
+                  if (_selectionRectLogical != null) {
+                    _activeHandle = _getHandleAt(local, _selectionRectLogical!);
+                  } else {
+                    _activeHandle = _ResizeHandle.none;
+                  }
+
+                  if (_activeHandle == _ResizeHandle.none) {
+                    // Crear nueva selección
+                    _dragStartLogical = local;
+                    _selectionRectLogical = Rect.fromPoints(local, local);
+                  } else if (_activeHandle == _ResizeHandle.center) {
+                    // Mover
+                    _baseFocalPoint = local;
                     _baseRectForResize = _selectionRectLogical;
                   } else {
-                    // 1 Dedo
-                    if (_selectionRectLogical != null &&
-                        _selectionRectLogical!.contains(local)) {
-                      // Tocar dentro: Modo Mover
-                      _isMoving = true;
-                      _isResizing = false;
-                      _baseFocalPoint = local;
-                      _baseRectForResize = _selectionRectLogical;
-                    } else {
-                      // Tocar fuera: Modo Dibujar Nuevo
-                      _isMoving = false;
-                      _isResizing = false;
-                      _dragStartLogical = local;
-                      _selectionRectLogical = Rect.fromPoints(local, local);
+                    // Redimensionar una esquina
+                    // Definimos el punto de ancla (la esquina opuesta)
+                    switch (_activeHandle) {
+                      case _ResizeHandle.topLeft:
+                        _dragStartLogical = _selectionRectLogical!.bottomRight;
+                        break;
+                      case _ResizeHandle.topRight:
+                        _dragStartLogical = _selectionRectLogical!.bottomLeft;
+                        break;
+                      case _ResizeHandle.bottomLeft:
+                        _dragStartLogical = _selectionRectLogical!.topRight;
+                        break;
+                      case _ResizeHandle.bottomRight:
+                        _dragStartLogical = _selectionRectLogical!.topLeft;
+                        break;
+                      default:
+                        break;
                     }
                   }
                 },
@@ -194,42 +215,17 @@ class _WebViewCaptureState extends State<WebViewCapture> {
                   if (box == null) return;
                   final local = box.globalToLocal(details.focalPoint);
 
-                  if (details.pointerCount > 1) {
-                    // Detectar inicio de pinch tardío (si se añade el 2º dedo después)
-                    if (!_isResizing) {
-                      _isResizing = true;
-                      _isMoving = false;
-                      _baseRectForResize = _selectionRectLogical ??
-                          Rect.fromCenter(center: local, width: 200, height: 200);
-                    }
-                    if (_baseRectForResize != null) {
+                  if (_activeHandle == _ResizeHandle.center) {
+                    // Mover
+                    if (_baseRectForResize != null && _baseFocalPoint != null) {
+                      final delta = local - _baseFocalPoint!;
                       setState(() {
-                        final newWidth =
-                            _baseRectForResize!.width * details.horizontalScale;
-                        final newHeight =
-                            _baseRectForResize!.height * details.verticalScale;
-                        _selectionRectLogical = Rect.fromCenter(
-                          center: _baseRectForResize!.center,
-                          width: newWidth,
-                          height: newHeight,
-                        );
+                        _selectionRectLogical = _baseRectForResize!.shift(delta);
                       });
                     }
                   } else {
-                    // 1 Dedo
-                    if (_isResizing) return; // Ignorar si estábamos escalando
-
-                    if (_isMoving &&
-                        _baseRectForResize != null &&
-                        _baseFocalPoint != null) {
-                      // Mover
-                      final delta = local - _baseFocalPoint!;
-                      setState(() {
-                        _selectionRectLogical =
-                            _baseRectForResize!.shift(delta);
-                      });
-                    } else if (_dragStartLogical != null) {
-                      // Dibujar
+                    // Redimensionar o Crear (ambos usan _dragStartLogical como ancla)
+                    if (_dragStartLogical != null) {
                       setState(() {
                         _selectionRectLogical =
                             Rect.fromPoints(_dragStartLogical!, local);
@@ -238,8 +234,7 @@ class _WebViewCaptureState extends State<WebViewCapture> {
                   }
                 },
                 onScaleEnd: (details) {
-                  _isMoving = false;
-                  _isResizing = false;
+                  _activeHandle = _ResizeHandle.none;
                   _baseRectForResize = null;
                   _baseFocalPoint = null;
                   _dragStartLogical = null;
@@ -473,6 +468,21 @@ class _SelectionOverlayPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0,
     );
+
+    // Dibujar manejadores en las esquinas
+    final paintHandle = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.fill;
+    final paintBorder = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    const double radius = 6.0;
+    for (final offset in [rect.topLeft, rect.topRight, rect.bottomLeft, rect.bottomRight]) {
+      canvas.drawCircle(offset, radius, paintHandle);
+      canvas.drawCircle(offset, radius, paintBorder);
+    }
   }
 
   @override

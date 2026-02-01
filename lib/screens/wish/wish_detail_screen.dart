@@ -286,7 +286,7 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                                   shape: const CircleBorder(),
                                   elevation: 2,
                                   child: IconButton(
-                                    icon: Icon(Icons.open_in_browser,
+                                    icon: Icon(Icons.edit,
                                         color: Theme.of(context)
                                             .colorScheme
                                             .primary),
