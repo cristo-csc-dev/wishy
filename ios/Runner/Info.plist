@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos acceso a tu cámara para que puedas añadir fotos a tus deseos y a tu perfil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a tu galería para que puedas seleccionar fotos para tus deseos y tu perfil.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Este permiso es necesario si deseas grabar vídeos para tus deseos.</string>
 </dict>
 </plist>

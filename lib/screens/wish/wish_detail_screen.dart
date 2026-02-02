@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart'; // Asegúrate de que este import sea correcto
+import 'package:uuid/uuid.dart';
 
 import 'package:wishy/utils/webview_capture.dart';
 import 'package:intl/intl.dart';
@@ -194,6 +199,86 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
     }
   }
 
+  Future<void> _pickImageAndUpload(ImageSource source) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image =
+        await picker.pickImage(source: source, imageQuality: 80, maxWidth: 1024);
+
+    if (image == null) return;
+
+    // --- INICIO: Lógica de recorte ---
+    final CroppedFile? croppedFile = await ImageCropper().cropImage(
+      sourcePath: image.path,
+      uiSettings: [
+        AndroidUiSettings(
+            toolbarTitle: 'Recortar Imagen',
+            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarWidgetColor: Colors.white,
+            statusBarColor: Theme.of(context).colorScheme.primary,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio3x2,
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9
+            ]),
+        IOSUiSettings(
+          title: 'Recortar Imagen',
+          doneButtonTitle: 'Hecho',
+          cancelButtonTitle: 'Cancelar',
+          aspectRatioPresets: [
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio3x2,
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9
+          ],
+        ),
+      ],
+    );
+
+    if (croppedFile == null) return; // El usuario canceló el recorte
+    // --- FIN: Lógica de recorte ---
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    String? downloadUrl;
+    try {
+      final File imageFile = File(croppedFile.path); // Usamos el archivo recortado
+      final storageRef = FirebaseStorage.instance.ref();
+      final String fileName = '${const Uuid().v4()}.jpg';
+      final imageRef = storageRef.child('wish_images/$fileName');
+
+      await imageRef.putFile(
+        imageFile,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      downloadUrl = await imageRef.getDownloadURL();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al subir la imagen: $e')),
+        );
+      }
+    }
+
+    if (downloadUrl != null) {
+      await _updateWishImage(downloadUrl);
+    } else {
+      // If upload failed, hide loader
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -273,62 +358,84 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                           ),
 
                         // Botones sobre la imagen
-                        if (_wishList?.ownerId ==
-                            UserAuth.instance.getCurrentUser().uid && _wishItem?.productUrl != null)
+                        if (_wishList?.ownerId == UserAuth.instance.getCurrentUser().uid)
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                // Botón para capturar desde web
-                                Material(
-                                  color: Colors.white.withOpacity(0.85),
-                                  shape: const CircleBorder(),
-                                  elevation: 2,
-                                  child: IconButton(
-                                    icon: Icon(Icons.open_in_browser,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary),
-                                    tooltip: 'Capturar desde web',
-                                    onPressed: () async {
-                                      if(_wishItem != null && _wishItem!.productUrl != null && _wishItem!.productUrl!.isNotEmpty) {
-                                        final result = await Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => WebViewCapture(
-                                                initialUrl: _wishItem!.productUrl!),
-                                          ),
-                                        );
-                                        if (result != null && result is String) {
-                                          _updateWishImage(result);
+                                  // Menú para cambiar imagen
+                                  Material(
+                                    color: Colors.white.withOpacity(0.85),
+                                    shape: const CircleBorder(),
+                                    elevation: 2,
+                                    child: PopupMenuButton<String>(
+                                      icon: Icon(Icons.edit,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary),
+                                      tooltip: 'Cambiar imagen',
+                                      onSelected: (value) async {
+                                        if (value == 'webview') {
+                                          if (_wishItem?.productUrl != null &&
+                                              _wishItem!
+                                                  .productUrl!.isNotEmpty) {
+                                            final result = await Navigator.of(
+                                                    context)
+                                                .push(
+                                              MaterialPageRoute(
+                                                builder: (_) => WebViewCapture(
+                                                    initialUrl: _wishItem!
+                                                        .productUrl!),
+                                              ),
+                                            );
+                                            if (result != null &&
+                                                result is String) {
+                                              _updateWishImage(result);
+                                            }
+                                          }
+                                        } else if (value == 'camera') {
+                                          _pickImageAndUpload(ImageSource.camera);
+                                        } else if (value == 'gallery') {
+                                          _pickImageAndUpload(ImageSource.gallery);
                                         }
-                                      }
-                                    },
+                                      },
+                                      itemBuilder: (BuildContext context) =>
+                                          <PopupMenuEntry<String>>[
+                                        PopupMenuItem<String>(
+                                          value: 'webview',
+                                          enabled: _wishItem?.productUrl != null && _wishItem!.productUrl!.isNotEmpty,
+                                          child: const Row(
+                                            children: [
+                                              Icon(Icons.web),
+                                              SizedBox(width: 12),
+                                              Text('Capturar desde web'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'camera',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.camera_alt),
+                                              SizedBox(width: 12),
+                                              Text('Tomar foto'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'gallery',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.photo_library),
+                                              SizedBox(width: 12),
+                                              Text('Elegir de galería'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                // const SizedBox(width: 8),
-                                // // Botón para subir imagen
-                                // Material(
-                                //   color: Colors.white.withOpacity(0.85),
-                                //   shape: const CircleBorder(),
-                                //   elevation: 2,
-                                //   child: IconButton(
-                                //     icon: Icon(Icons.camera_alt,
-                                //         color: Theme.of(context)
-                                //             .colorScheme
-                                //             .primary),
-                                //     tooltip: 'Subir foto',
-                                //     onPressed: () {
-                                //       // TODO: Implementar lógica para subir foto
-                                //       ScaffoldMessenger.of(context)
-                                //           .showSnackBar(
-                                //         const SnackBar(
-                                //             content: Text(
-                                //                 'Funcionalidad para subir foto no implementada.')),
-                                //       );
-                                //     },
-                                //   ),
-                                // ),
                               ],
                             ),
                           ),
