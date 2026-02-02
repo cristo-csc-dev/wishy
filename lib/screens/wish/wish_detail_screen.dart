@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
@@ -205,13 +206,49 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
 
     if (image == null) return;
 
+    // --- INICIO: Lógica de recorte ---
+    final CroppedFile? croppedFile = await ImageCropper().cropImage(
+      sourcePath: image.path,
+      uiSettings: [
+        AndroidUiSettings(
+            toolbarTitle: 'Recortar Imagen',
+            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarWidgetColor: Colors.white,
+            statusBarColor: Theme.of(context).colorScheme.primary,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio3x2,
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9
+            ]),
+        IOSUiSettings(
+          title: 'Recortar Imagen',
+          doneButtonTitle: 'Hecho',
+          cancelButtonTitle: 'Cancelar',
+          aspectRatioPresets: [
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio3x2,
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9
+          ],
+        ),
+      ],
+    );
+
+    if (croppedFile == null) return; // El usuario canceló el recorte
+    // --- FIN: Lógica de recorte ---
+
     setState(() {
       _isLoading = true;
     });
 
     String? downloadUrl;
     try {
-      final File imageFile = File(image.path);
+      final File imageFile = File(croppedFile.path); // Usamos el archivo recortado
       final storageRef = FirebaseStorage.instance.ref();
       final String fileName = '${const Uuid().v4()}.jpg';
       final imageRef = storageRef.child('wish_images/$fileName');
