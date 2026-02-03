@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wishy/dao/user_dao.dart';
+import 'package:wishy/utils/simple_image_cropper.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -83,13 +84,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        maxWidth: 800,
-        maxHeight: 800,
+        maxWidth: 1024,
+        maxHeight: 1024,
         imageQuality: 85,
       );
 
-      if (pickedFile != null) {
-        _uploadImage(File(pickedFile.path));
+      if (pickedFile == null) return;
+
+      final imageBytes = await pickedFile.readAsBytes();
+
+      if (!mounted) return;
+
+      final Uint8List? croppedBytes = await Navigator.of(context).push<Uint8List>(
+        MaterialPageRoute(builder: (_) => SimpleImageCropper(imageBytes: imageBytes)),
+      );
+
+      if (croppedBytes != null) {
+        _uploadImage(croppedBytes);
       }
     } catch (e) {
       if (mounted) {
@@ -100,7 +111,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  Future<void> _uploadImage(File imageFile) async {
+  Future<void> _uploadImage(Uint8List imageBytes) async {
     setState(() {
       _isLoading = true;
     });
@@ -124,10 +135,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         debugPrint('Error al limpiar imágenes antiguas: $e');
       }
 
-      final String fileName = 'profile_${user.uid}.jpg';
+      final String fileName = 'profile_${user.uid}.png';
       final Reference storageRef = userFolderRef.child(fileName);
 
-      final UploadTask uploadTask = storageRef.putFile(imageFile);
+      final UploadTask uploadTask = storageRef.putData(
+        imageBytes,
+        SettableMetadata(contentType: 'image/png'),
+      );
       final TaskSnapshot snapshot = await uploadTask;
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 

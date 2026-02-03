@@ -1,16 +1,16 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart'; // Asegúrate de que este import sea correcto
 import 'package:uuid/uuid.dart';
+import 'package:wishy/utils/simple_image_cropper.dart';
 
 import 'package:wishy/utils/webview_capture.dart';
 import 'package:intl/intl.dart';
@@ -206,41 +206,18 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
 
     if (image == null) return;
 
-    // --- INICIO: Lógica de recorte ---
-    final CroppedFile? croppedFile = await ImageCropper().cropImage(
-      sourcePath: image.path,
-      uiSettings: [
-        AndroidUiSettings(
-            toolbarTitle: 'Recortar Imagen',
-            toolbarColor: Theme.of(context).colorScheme.primary,
-            toolbarWidgetColor: Colors.white,
-            statusBarColor: Theme.of(context).colorScheme.primary,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false,
-            aspectRatioPresets: [
-              CropAspectRatioPreset.square,
-              CropAspectRatioPreset.ratio3x2,
-              CropAspectRatioPreset.original,
-              CropAspectRatioPreset.ratio4x3,
-              CropAspectRatioPreset.ratio16x9
-            ]),
-        IOSUiSettings(
-          title: 'Recortar Imagen',
-          doneButtonTitle: 'Hecho',
-          cancelButtonTitle: 'Cancelar',
-          aspectRatioPresets: [
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9
-          ],
-        ),
-      ],
+    final imageBytes = await image.readAsBytes();
+
+    if (!mounted) return;
+
+    // Navegar a la pantalla de recorte personalizada
+    final Uint8List? croppedBytes = await Navigator.of(context).push<Uint8List>(
+      MaterialPageRoute(
+        builder: (_) => SimpleImageCropper(imageBytes: imageBytes),
+      ),
     );
 
-    if (croppedFile == null) return; // El usuario canceló el recorte
-    // --- FIN: Lógica de recorte ---
+    if (croppedBytes == null) return; // El usuario canceló el recorte
 
     setState(() {
       _isLoading = true;
@@ -248,14 +225,14 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
 
     String? downloadUrl;
     try {
-      final File imageFile = File(croppedFile.path); // Usamos el archivo recortado
       final storageRef = FirebaseStorage.instance.ref();
       final String fileName = '${const Uuid().v4()}.jpg';
       final imageRef = storageRef.child('wish_images/$fileName');
 
-      await imageRef.putFile(
-        imageFile,
-        SettableMetadata(contentType: 'image/jpeg'),
+      // Subir los bytes de la imagen recortada (que están en formato PNG desde el cropper)
+      await imageRef.putData(
+        croppedBytes,
+        SettableMetadata(contentType: 'image/png'),
       );
 
       downloadUrl = await imageRef.getDownloadURL();
@@ -277,6 +254,36 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
         });
       }
     }
+  }
+
+  void _showImageSourceOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galería'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageAndUpload(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Cámara'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageAndUpload(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -394,10 +401,8 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                                               _updateWishImage(result);
                                             }
                                           }
-                                        } else if (value == 'camera') {
-                                          _pickImageAndUpload(ImageSource.camera);
-                                        } else if (value == 'gallery') {
-                                          _pickImageAndUpload(ImageSource.gallery);
+                                        } else if (value == 'capture') {
+                                          _showImageSourceOptions();
                                         }
                                       },
                                       itemBuilder: (BuildContext context) =>
@@ -407,29 +412,19 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                                           enabled: _wishItem?.productUrl != null && _wishItem!.productUrl!.isNotEmpty,
                                           child: const Row(
                                             children: [
-                                              Icon(Icons.web),
+                                              Icon(Icons.web_asset),
                                               SizedBox(width: 12),
                                               Text('Capturar desde web'),
                                             ],
                                           ),
                                         ),
                                         const PopupMenuItem<String>(
-                                          value: 'camera',
+                                          value: 'capture',
                                           child: Row(
                                             children: [
-                                              Icon(Icons.camera_alt),
+                                              Icon(Icons.add_a_photo),
                                               SizedBox(width: 12),
-                                              Text('Tomar foto'),
-                                            ],
-                                          ),
-                                        ),
-                                        const PopupMenuItem<String>(
-                                          value: 'gallery',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.photo_library),
-                                              SizedBox(width: 12),
-                                              Text('Elegir de galería'),
+                                              Text('Capturar imagen'),
                                             ],
                                           ),
                                         ),

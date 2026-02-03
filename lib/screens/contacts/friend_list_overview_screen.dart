@@ -21,7 +21,7 @@ class FriendListsOverviewScreen extends StatefulWidget {
 class FriendListOverviewState extends State<FriendListsOverviewScreen> {
 
   Contact? _contact;
-  bool _isLoading = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -30,14 +30,13 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
   }
 
   void _getContact() async {
-    setState(() {
-      _isLoading = true;
-    });
     Contact contact = await UserDao().getContactById(widget.contactId);
-    setState(() {
-      _contact = contact;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _contact = contact;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -85,7 +84,7 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
                 child: CircularProgressIndicator(),
               ),
             ):
-            Expanded(
+            _contact != null ? Expanded(
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: WishlistDao().getSharedWishlistsStreamSnapshot(_contact!.id),
                 builder: (context, snapshot) {
@@ -128,7 +127,7 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
                   );
                 },
               ),
-            ),
+            ) : const Expanded(child: Center(child: Text('Error al cargar contacto'))),
         ],
       ),
     );

@@ -59,7 +59,7 @@ class ListCard extends StatelessWidget {
                       : null,
                 ),
                 const SizedBox(width: 10),
-                Column(
+                Expanded(child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -137,7 +137,7 @@ class ListCard extends StatelessWidget {
                   //   ),
                   // ],
                 ],
-              ),
+              )),
             ],
           ),
         ),

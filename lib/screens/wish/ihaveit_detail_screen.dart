@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:wishy/screens/wish/wish_detail_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class IHaveItDetailScreen extends StatelessWidget {
   final DocumentReference<Map<String, dynamic>> claimRef;
@@ -13,7 +14,7 @@ class IHaveItDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle — Los tengo!')),
+      appBar: AppBar(title: const Text('Detalle')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: claimRef.snapshots(),
         builder: (context, snapshot) {
@@ -33,6 +34,7 @@ class IHaveItDetailScreen extends StatelessWidget {
           final originalOwner = (data['originalOwnerId'] ?? '').toString();
           final originalWishlist = (data['originalWishlistId'] ?? '').toString();
           final originalWish = (data['originalWishId'] ?? '').toString();
+          final productUrl = (data['productUrl'] ?? '').toString();
 
           return SingleChildScrollView(
             child: Padding(
@@ -56,46 +58,37 @@ class IHaveItDetailScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   if (comments.isNotEmpty) Text(comments, style: const TextStyle(fontSize: 16)),
                   const SizedBox(height: 12),
-                  // Mostrar ID del deseo original con opción de copiar
-                  if (originalWish.isNotEmpty)
-                    Row(
-                      children: [
-                        const Text('ID del deseo: ', style: TextStyle(color: Colors.grey)),
-                        Expanded(child: SelectableText(originalWish, style: const TextStyle(fontWeight: FontWeight.w500))),
-                        IconButton(
-                          icon: const Icon(Icons.copy, size: 20),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: originalWish));
-                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID copiado al portapapeles')));
-                          },
-                          tooltip: 'Copiar ID',
-                        ),
-                      ],
+                  if (productUrl.isNotEmpty) ...[
+                    const Text(
+                      'Enlace del Producto',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
                     ),
+                    const SizedBox(height: 4),
+                    InkWell(
+                      onTap: () async {
+                        final uri = Uri.parse(productUrl);
+                        await launchUrl(uri);
+                      },
+                      child: Text(
+                        productUrl,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.blue.shade700,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  // Mostrar ID del deseo original con opción de copiar
                   const SizedBox(height: 8),
                   const SizedBox(height: 8),
                   const SizedBox(height: 20),
                   Row(children: [
-                    if (originalOwner.isNotEmpty && originalWishlist.isNotEmpty && originalWish.isNotEmpty)...[
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          context.go('/home/ihaveit/${claimRef.id}/detail/${originalWishlist}/${originalWish}');
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => WishDetailScreen(
-                                userId: originalOwner,
-                                wishListId: originalWishlist,
-                                wishItemId: originalWish,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.open_in_new),
-                        label: const Text('Ver deseo original'),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
                     OutlinedButton.icon(
                       onPressed: () async {
                         // Optionally: allow deleting the claim from detail screen
