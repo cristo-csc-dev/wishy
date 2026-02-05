@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wishy/auth/user_auth.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
-import 'package:wishy/screens/contacts/create_contact_request_screen.dart';
 import 'package:wishy/widgets/contact_avatar.dart';
 
 class ContactsListScreen extends StatelessWidget {
