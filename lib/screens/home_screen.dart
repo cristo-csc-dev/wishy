@@ -19,6 +19,7 @@ import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 import 'package:wishy/static/available_wishlist_icons.dart';
+import 'package:wishy/widgets/wish_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,8 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Cambia a 3 pestañas: 0 para Mis Listas, 1 para Listas para Regalar, 2 para Eventos
-  int _selectedIndex = 0; 
   int _pendingRequestsCount = 0;
 
   @override
@@ -106,32 +105,44 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: _buildAppDrawer(),
-      body: Column(
-        children: [
-          _buildSegmentedControl(),
-          Expanded(
-            child: IndexedStack( // Usamos IndexedStack para mantener el estado de cada vista
-              index: _selectedIndex,
-              children: [
-                _buildMyListsView(),
-                _buildGiftListsContactsView(),
-                //_buildEventsView(), // ¡NUEVO!
-              ],
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: (_selectedIndex == 0)? FloatingActionButton(
-        onPressed: () async {
-          // Si estamos en la pestaña de eventos, el FAB crea un evento
-          context.go('/home/wishlists/mine/add'); // Volver a Home después de crear la lista
-          // if(context.mounted) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //       SnackBar(content: Text('Lista "$newListName" creada.')));
-          // }
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('all_wishes_global')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+          if (docs.isEmpty) {
+            return const Center(child: Text('No hay deseos globales.'));
+          }
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final wishItem = WishItem.fromFirestore(doc);
+              final data = doc.data() as Map<String, dynamic>;
+              
+              final wishList = WishList(
+                ownerId: data['ownerId'] ?? '',
+                name: 'Global',
+                privacy: ListPrivacy.public,
+                itemCount: 0,
+              )..id = data['originalWishlistId'];
+              return WishCard(
+                wishItem: wishItem,
+                // wishList: wishList,
+              );
+            },
+          );
         },
-        child: Icon(_selectedIndex == 2 ? Icons.event : Icons.add), // Icono dinámico
-      ): null,
+      ),
     );
   }
 
@@ -154,282 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildSegmentedControl() {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      color: Colors.white,
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              onTap: () { setState(() { _selectedIndex = 0; }); },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                decoration: BoxDecoration(
-                  color: _selectedIndex == 0 ? Colors.blueGrey.shade100 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text('Míos', style: TextStyle(fontWeight: _selectedIndex == 0 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 0 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: () { setState(() { _selectedIndex = 1; }); },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                decoration: BoxDecoration(
-                  color: _selectedIndex == 1 ? Colors.blueGrey.shade100 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text('Suyos', style: TextStyle(fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal, color: _selectedIndex == 1 ? Colors.blueGrey.shade800 : Colors.grey.shade700)),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- VISTA DE MIS LISTAS ---
-  Widget _buildMyListsView() {
-    final user = _auth.currentUser;
-    if (user == null || !user.emailVerified) {
-      return const Center(child: Text('Inicia sesión para ver tus listas.'));
-    }
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: WishlistDao().getWishlistsStreamSnapshot(user.uid),
-      builder: (context, myWishlistsSnapshot) {
-        if (myWishlistsSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (myWishlistsSnapshot.hasError) {
-          return Center(child: Text('Error: ${myWishlistsSnapshot.error}'));
-        }
-
-        if (!myWishlistsSnapshot.hasData || myWishlistsSnapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text('No tienes listas de deseos. ¡Crea una!'),
-          );
-        }
-
-        return ListView.builder(
-          itemCount: myWishlistsSnapshot.data!.docs.length,
-          itemBuilder: (context, index) {
-            final doc = myWishlistsSnapshot.data!.docs[index];
-            final list = WishList.fromFirestore(doc);
-
-            String privacyText() {
-              switch (list.privacy) {
-                case ListPrivacy.private:
-                  return 'Privada';
-                case ListPrivacy.public:
-                  return 'Pública (Enlace)';
-                case ListPrivacy.shared:
-                  return 'Compartida con ${list.sharedWithContactIds.length} pers.';
-              }
-            }
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: InkWell(
-                onTap: () {
-                  context.go('/home/wishlists/mine/${list.id}');
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        backgroundImage: (list.iconKey != null && availableIcons.containsKey(list.iconKey))
-                            ? AssetImage(availableIcons[list.iconKey]!['path'] as String)
-                            : null,
-                        child: (list.iconKey == null || !availableIcons.containsKey(list.iconKey))
-                            ? (list.name.isNotEmpty
-                                ? Text((list.name.length > 1 ? list.name.substring(0, 2) : list.name).toUpperCase(),
-                                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold))
-                                : const Icon(Icons.card_giftcard, color: Colors.indigo))
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              list.name,
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Text('${list.itemCount} deseos • ${privacyText()}', style: TextStyle(color: Colors.grey.shade600)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            context.go('/home/wishlists/mine/${list.id}/editFromList');
-                          }
-                          if (value == 'share') {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Compartir lista "${list.name}"')));
-                          }
-                          if (value == 'add') {
-                            final newWish = await context.push('/home/wishlists/mine/${list.id}/wish/add');
-                            if (newWish != null && newWish is WishItem) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Deseo "${newWish.name}" añadido.')));
-                            }
-                          }
-                          if (value == 'delete') {
-                            _showDeleteConfirmationDialog(list);
-                          }
-                        },
-                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Text('Editar'),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'add',
-                            child: Text('Añadir deseo'),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Text('Eliminar'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildGiftListsContactsView() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: UserDao().getAcceptedContactsStream(),
-      builder: (context, snapshot) {
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text('Nadie ha compartido una lista contigo aún.'),
-          );
-        }
-
-        var contactsWithSharedLists = snapshot.data!.docs
-            .map((doc) => Contact.fromFirestore(doc))
-            .toList();
-
-        if (contactsWithSharedLists.isEmpty) {
-          return const Center(
-            child: Text('Nadie ha compartido una lista contigo aún.'),
-          );
-        }
-
-        return ListView.builder(
-          itemCount: contactsWithSharedLists.length,
-          itemBuilder: (context, index) {
-            final contact = contactsWithSharedLists[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: InkWell(
-                onTap: () {
-                  context.go('/home/contacts/${contact.id}');
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            child: Text(
-                              (contact.contactName?? contact.name ?? contact.email).substring(0, 2),
-                              style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-                            ),
-                          ), // Usar un icono de la lista
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              contact.contactName?? contact.name?? contact.email,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          });
-      },
-    );
-  }
-
-  // ... ( _showDeleteConfirmationDialog permanece igual ) ...
-  void _showDeleteConfirmationDialog(WishList list) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Eliminar Lista'),
-          content: Text('¿Estás seguro de que quieres eliminar la lista "${list.name}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  //userWishLists.remove(list);
-                });
-                WishlistDao().deleteWishlist(list.id!);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Lista "${list.name}" eliminada.')));
-              },
-              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-  
   void _signOut() async {
     UserAuth.instance.signOut();
   }

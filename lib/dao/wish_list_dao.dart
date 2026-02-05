@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wishy/auth/user_auth.dart';
+import 'package:wishy/models/wish_item.dart';
 import 'package:wishy/models/wish_list.dart';
 
 class WishlistDao {
@@ -285,6 +286,13 @@ class WishlistDao {
     }
 
     return collectionRef.snapshots();
+  }
+
+  Future<WishItem> getGlobalWish({required String wishItemId}) async {
+    DocumentSnapshot<Map<String, dynamic>> wishMap = await _db.collection('all_wishes_global')
+      .doc(wishItemId)
+      .get();
+    return WishItem.fromFirestore(wishMap);
   }
 
 }

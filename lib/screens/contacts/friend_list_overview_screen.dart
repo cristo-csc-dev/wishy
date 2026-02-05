@@ -5,6 +5,7 @@ import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/dao/wish_list_dao.dart';
 import 'package:wishy/models/contact.dart';
 import 'package:wishy/models/wish_list.dart';
+import 'package:wishy/widgets/contact_avatar.dart';
 import 'package:wishy/widgets/list_card.dart';
 
 class FriendListsOverviewScreen extends StatefulWidget {
@@ -65,14 +66,20 @@ class FriendListOverviewState extends State<FriendListsOverviewScreen> {
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Column(
               children: [
-                CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  radius: 40,
-                  child: Text(
-                    displayName.isNotEmpty ? displayName[0] : '',
-                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                ContactAvatar(contactId: widget.contactId, displayName: displayName, radius: ContactAvatar.high),
+                // CircleAvatar(
+                //   backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                //   radius: 40,
+                //   backgroundImage: _contact?.avatarUrl != null && _contact!.avatarUrl!.isNotEmpty
+                //       ? NetworkImage(_contact!.avatarUrl!)
+                //       : null,
+                //   child: _contact?.avatarUrl == null || _contact!.avatarUrl!.isEmpty
+                //       ? Text(
+                //           displayName.isNotEmpty ? displayName[0].toUpperCase() : '',
+                //           style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 30),
+                //         )
+                //       : null,
+                // ),
               ],
             ),
           ),

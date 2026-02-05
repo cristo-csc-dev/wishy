@@ -61,6 +61,13 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
           path: '/profile',
           builder: (context, state) => const UserProfileScreen(),
         ),
+        GoRoute(
+          path: '/global/:wishItemId/detail',
+          builder: (context, state) {
+            final wishItemId = state.pathParameters['wishItemId'] ?? '';
+            return WishDetailScreen(wishItemId: wishItemId);
+          },
+        ),
         // Mis items "Los tengo"
         GoRoute(
           path: '/ihaveit',
@@ -115,7 +122,7 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
               },
               routes: [
                 GoRoute(
-                  path: '/edit',
+                  path: '/edit/:contactId',
                   builder: (context, state) {
                     final contactId = state.pathParameters['contactId'] ?? '';
                     return EditContactScreen(contactId: contactId);

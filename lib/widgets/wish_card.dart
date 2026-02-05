@@ -10,7 +10,7 @@ import 'package:wishy/utils/webview_capture.dart';
 
 class WishCard extends StatefulWidget {
   final WishItem wishItem;
-  final WishList wishList;
+  final WishList? wishList;
   final bool isForGifting; // Si esta tarjeta es para el regalador
   final VoidCallback? onMarkAsBought; // Solo si isForGifting es true
   final VoidCallback? onEdit; // Solo si no es forGifting
@@ -19,7 +19,7 @@ class WishCard extends StatefulWidget {
   const WishCard({
     super.key,
     required this.wishItem,
-    required this.wishList,
+    this.wishList,
     this.isForGifting = false,
     this.onMarkAsBought,
     this.onEdit,
@@ -40,8 +40,8 @@ class _WishCardState extends State<WishCard> {
     _currentPriority = widget.wishItem.priority;
   }
 
-  bool get _isOwner =>
-      widget.wishList.ownerId == UserAuth.instance.getCurrentUser().uid;
+  bool get _isOwner => widget.wishList != null &&
+      widget.wishList!.ownerId == UserAuth.instance.getCurrentUser().uid;
 
   Future<void> _setPriority(int newPriority) async {
     if (!_isOwner) return;
@@ -51,7 +51,7 @@ class _WishCardState extends State<WishCard> {
       _isUpdating = true;
     });
 
-    final wishlistId = widget.wishList.id ?? '';
+    final wishlistId = widget.wishList?.id ?? '';
     if (wishlistId.isEmpty) {
       setState(() {
         _currentPriority = oldPriority;
@@ -117,7 +117,7 @@ class _WishCardState extends State<WishCard> {
     final wishItem = widget.wishItem;
     final wishList = widget.wishList;
     bool showOptions = 
-        (wishList.ownerId == UserAuth.instance.getCurrentUser().uid);
+        ((wishList?.ownerId?? '') == UserAuth.instance.getCurrentUser().uid);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -125,15 +125,21 @@ class _WishCardState extends State<WishCard> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: InkWell(
         onTap: () async {
-          // Si la lista pertenece al usuario actual, usar la ruta de "mis listas"; si no, la de contactos
-          if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid) {
+          if(wishList == null) {
             context.go(
-              '/home/wishlists/mine/${wishList.id}/wish/${wishItem.id}/detail',
+              '/home/global/${wishItem.id}/detail',
             );
           } else {
-            context.go(
-              '/home/contacts/${wishList.ownerId}/lists/${wishList.id}/wishes/${wishItem.id}/detail',
-            );
+            // Si la lista pertenece al usuario actual, usar la ruta de "mis listas"; si no, la de contactos
+            if (wishList.ownerId == UserAuth.instance.getCurrentUser().uid) {
+              context.go(
+                '/home/wishlists/mine/${wishList.id}/wish/${wishItem.id}/detail',
+              );
+            } else {
+              context.go(
+                '/home/contacts/${wishList.ownerId}/lists/${wishList.id}/wishes/${wishItem.id}/detail',
+              );
+            }
           }
         },
         borderRadius: BorderRadius.circular(12),
@@ -177,26 +183,6 @@ class _WishCardState extends State<WishCard> {
                                 color: Colors.white.withOpacity(0.95),
                                 shape: const CircleBorder(),
                                 elevation: 2,
-                                // child: InkWell(
-                                //   customBorder: const CircleBorder(),
-                                //   onTap: () {
-                                //     Navigator.of(context).push(
-                                //       MaterialPageRoute(
-                                //         builder: (_) => const WebViewCapture(),
-                                //       ),
-                                //     );
-                                //   },
-                                //   child: Padding(
-                                //     padding: const EdgeInsets.all(6.0),
-                                //     child: Icon(
-                                //       Icons.open_in_browser,
-                                //       size: 18,
-                                //       color: Theme.of(
-                                //         context,
-                                //       ).colorScheme.primary,
-                                //     ),
-                                //   ),
-                                // ),
                               ),
                             ),
                           ],
@@ -240,16 +226,10 @@ class _WishCardState extends State<WishCard> {
                                     ),
                                   );
                                 },
-                                // child: Padding(
-                                //   padding: const EdgeInsets.all(6.0),
-                                //   child: Icon(
-                                //     Icons.open_in_browser,
-                                //     size: 18,
-                                //     color: Theme.of(
-                                //       context,
-                                //     ).colorScheme.primary,
-                                //   ),
-                                // ),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Icon(Icons.search, size: 20, color: Colors.blueGrey),
+                                ),
                               ),
                             ),
                           ),
@@ -341,8 +321,8 @@ class _WishCardState extends State<WishCard> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => IHaveItScreen(
-                                sourceUserId: wishList.ownerId,
-                                wishListId: wishList.id,
+                                sourceUserId: UserAuth().getCurrentUser().uid,
+                                wishListId: wishList?.id ?? '',
                                 wishItemId: wishItem.id,
                                 wishItemName: wishItem.name,
                               ),
@@ -363,8 +343,7 @@ class _WishCardState extends State<WishCard> {
                               value: 'edit',
                               child: Text('Editar'),
                             ),
-                            if (wishList.ownerId ==
-                                UserAuth.instance.getCurrentUser().uid)
+                            if (wishList != null && wishList.ownerId == UserAuth.instance.getCurrentUser().uid)
                               const PopupMenuItem<String>(
                                 value: 'ihaveit',
                                 child: Text('Lo tengo!'),

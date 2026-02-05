@@ -1,7 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 import 'package:wishy/dao/user_dao.dart';
 import 'package:wishy/models/contact.dart';
+import 'package:wishy/utils/simple_image_cropper.dart';
+import 'package:wishy/widgets/contact_avatar.dart';
 
 class EditContactScreen extends StatefulWidget {
 
@@ -58,6 +65,83 @@ class _EditContactScreenState extends State<EditContactScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImageAndUpload(ImageSource source) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 1024,
+    );
+
+    if (image == null) return;
+    final imageBytes = await image.readAsBytes();
+    if (!mounted) return;
+
+    final Uint8List? croppedBytes = await Navigator.of(context).push<Uint8List>(
+      MaterialPageRoute(
+        builder: (_) => SimpleImageCropper(imageBytes: imageBytes),
+      ),
+    );
+
+    if (croppedBytes == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final storageRef = FirebaseStorage.instance.ref();
+      final String fileName = '${const Uuid().v4()}.jpg';
+      final imageRef = storageRef.child('contact_images/$fileName');
+
+      await imageRef.putData(
+        croppedBytes,
+        SettableMetadata(contentType: 'image/png'),
+      );
+
+      final downloadUrl = await imageRef.getDownloadURL();
+      if (_contact != null) {
+        await UserDao().updateContactAvatar(_contact!, downloadUrl);
+        _getContact();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al subir la imagen: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showImageSourceOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galería'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageAndUpload(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Cámara'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageAndUpload(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -100,7 +184,9 @@ class _EditContactScreenState extends State<EditContactScreen> {
       appBar: AppBar(
         title: const Text('Editar Perfil'),
       ),
-      body: Padding(
+      body: _isLoading || _contact == null
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -109,14 +195,10 @@ class _EditContactScreenState extends State<EditContactScreen> {
             children: <Widget>[
               // Avatar del usuario
               Center(
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _contact?.avatarUrl != null && _contact!.avatarUrl!.isNotEmpty
-                      ? NetworkImage(_contact!.avatarUrl!)
-                      : null,
-                  child: _contact?.avatarUrl == null || _contact!.avatarUrl!.isEmpty
-                      ? const Icon(Icons.person, size: 50)
-                      : null,
+                child: Stack(
+                  children: [
+                    ContactAvatar(contactId: _contact!.id, displayName: _contact?.name ?? '', radius: ContactAvatar.high),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),

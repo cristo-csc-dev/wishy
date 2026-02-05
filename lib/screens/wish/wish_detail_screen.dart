@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
@@ -17,13 +18,13 @@ import 'package:intl/intl.dart';
 
 class WishDetailScreen extends StatefulWidget {
   final String wishItemId;
-  final String wishListId;
+  final String? wishListId;
   final String? userId;
 
   const WishDetailScreen({
     super.key,
     this.userId,
-    required this.wishListId,
+    this.wishListId,
     required this.wishItemId,
   });
 
@@ -46,19 +47,27 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
     setState(() {
       _isLoading = true;
     });
-    var wishListSnapshot = await WishlistDao().getContactWishlistById(
-      widget.wishListId,
-      widget.userId,
-    );
-    var wishItem = await wishListSnapshot.reference
-        .collection("items")
-        .doc(widget.wishItemId)
-        .get();
-    setState(() {
-      _wishList = WishList.fromFirestore(wishListSnapshot);
-      _wishItem = WishItem.fromFirestore(wishItem);
-      _isLoading = false;
-    });
+    if (widget.wishListId != null) {
+      var wishListSnapshot = await WishlistDao().getContactWishlistById(
+        widget.wishListId!,
+        widget.userId,
+      );
+      var wishItem = await wishListSnapshot.reference
+          .collection("items")
+          .doc(widget.wishItemId)
+          .get();
+      setState(() {
+        _wishList = WishList.fromFirestore(wishListSnapshot);
+        _wishItem = WishItem.fromFirestore(wishItem);
+        _isLoading = false;
+      });
+    } else {
+      var wishItem = await WishlistDao().getGlobalWish(wishItemId: widget.wishItemId);
+      setState(() {
+        _wishItem = wishItem;
+        _isLoading = false;
+      });
+    }
   }
 
   // Reutilizamos la lógica de prioridad de tu AddWishScreen para la etiqueta
@@ -304,7 +313,7 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
             ),
         ],
       ),
-      body: _isLoading || _wishItem == null || _wishList == null
+      body: _isLoading || _wishItem == null
           ? Container(
               color: Colors.black.withOpacity(0.5),
               child: Center(child: CircularProgressIndicator()),
@@ -469,11 +478,11 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                       isUrl: true,
                     ),
 
-                    // Lista a la que pertenece
-                    _buildDetailItem(
-                      'Perteneciente a la Lista',
-                      _wishList!.name,
-                    ),
+                    // // Lista a la que pertenece
+                    // _buildDetailItem(
+                    //   'Perteneciente a la Lista',
+                    //   _wishList!.name,
+                    // ),
 
                     // Notas / Detalles
                     if (_wishItem!.notes != null &&
