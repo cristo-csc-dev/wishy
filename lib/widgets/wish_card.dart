@@ -88,24 +88,27 @@ class _WishCardState extends State<WishCard> {
     final Color starColor =
         Theme.of(context).appBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.primary;
-    return Row(
-      children: List.generate(5, (index) {
-        final starIndex = index + 1;
-        final filled = starIndex <= _currentPriority;
-        return IconButton(
-          padding: const EdgeInsets.symmetric(horizontal: 3.0),
-          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-          onPressed: _isOwner && !_isUpdating
-              ? () => _setPriority(starIndex)
-              : null,
-          icon: Icon(
-            filled ? Icons.star : Icons.star_border,
-            color: starColor,
-            size: 18,
-          ),
-          tooltip: _isOwner ? 'Cambiar prioridad' : null,
-        );
-      }),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: List.generate(5, (index) {
+          final starIndex = index + 1;
+          final filled = starIndex <= _currentPriority;
+          return IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 3.0),
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            onPressed: null,
+            icon: Icon(
+              filled ? Icons.star : Icons.star_border,
+              color: starColor,
+              size: 18,
+            ),
+            tooltip: 'Prioridad $starIndex',
+          );
+        }),
+      ),
     );
   }
 
@@ -392,7 +395,7 @@ class _WishCardState extends State<WishCard> {
                         }
                       },
                       icon: const Icon(Icons.link, size: 18),
-                      label: const Text('Ver Producto'),
+                      label: const Text('Ver en web'),
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.blueGrey,
                         backgroundColor: Colors.blueGrey.shade50,

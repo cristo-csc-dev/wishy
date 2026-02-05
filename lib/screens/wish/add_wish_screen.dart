@@ -307,25 +307,31 @@ class _AddWishScreenState extends State<AddWishScreen> {
                           'Prioridad:',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        Slider(
-                          value: _selectedPriority.toDouble(),
-                          min: 1,
-                          max: 5,
-                          divisions: 4,
-                          label: _getPriorityLabel(_selectedPriority),
-                          onChanged: (double value) {
-                            setState(() {
-                              _selectedPriority = value.round();
-                            });
-                          },
-                        ),
+                        const SizedBox(height: 8),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            Text('Baja'),
-                            Text('Media'),
-                            Text('Imprescindible'),
-                          ],
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(5, (index) {
+                            return IconButton(
+                              iconSize: 36,
+                              onPressed: () {
+                                setState(() {
+                                  _selectedPriority = index + 1;
+                                });
+                              },
+                              icon: Icon(
+                                index < _selectedPriority
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: Colors.amber,
+                              ),
+                            );
+                          }),
+                        ),
+                        Center(
+                          child: Text(
+                            _getPriorityLabel(_selectedPriority),
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
                         ),
                         if (_wishList == null) ...[
                           const SizedBox(height: 24),

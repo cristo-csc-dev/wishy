@@ -412,9 +412,9 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
                                           enabled: _wishItem?.productUrl != null && _wishItem!.productUrl!.isNotEmpty,
                                           child: const Row(
                                             children: [
-                                              Icon(Icons.web_asset),
+                                              Icon(Icons.link),
                                               SizedBox(width: 12),
-                                              Text('Capturar desde web'),
+                                              Text('Desde enlace'),
                                             ],
                                           ),
                                         ),

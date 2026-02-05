@@ -483,6 +483,13 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.list, color: Colors.indigo),
+            title: const Text('Mis listas'),
+            onTap: () {
+              context.go('/home/wishlists/mine');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.card_giftcard, color: Colors.indigo),
             title: const Text('Los tengo!'),
             onTap: () {

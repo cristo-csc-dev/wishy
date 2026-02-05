@@ -1,43 +1,45 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
+const {onDocumentWritten} = require("firebase-functions/v2/firestore");
+const {getFirestore} = require("firebase-admin/firestore");
+const admin = require("firebase-admin");
 const functions = require("firebase-functions/v1");
-const {setGlobalOptions} = require("firebase-functions");
-// const {onRequest} = require("firebase-functions/https");
 const logger = require("firebase-functions/logger");
 
-const admin = require("firebase-admin");
-if (admin.apps.length === 0) {
-  admin.initializeApp();
-}
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({
-  maxInstances: 10,
-});
+admin.initializeApp();
+const db = getFirestore();
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+// Escuchamos los cambios en el nivel más profundo: los ítems
+exports.syncItemsToGlobalList =
+  onDocumentWritten("users/{userId}/wishlists/{wishlistId}/items/{itemId}",
+      async (event) => {
+        // Extraemos los IDs de la ruta
+        const {userId, wishlistId, itemId} = event.params;
+        // Referencia al documento en la colección aplanada global
+        // Usamos el itemId como ID del documento para evitar duplicados
+        const globalRef = db.collection("all_wishes_global").doc(itemId);
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+        // 1. Manejo de ELIMINACIÓN
+        if (!event.data.after.exists) {
+          await globalRef.delete();
+          console.log(`Ítem ${itemId} eliminado de la lista global.`);
+          return;
+        }
+
+        // 2. Manejo de CREACIÓN o ACTUALIZACIÓN
+        const itemData = event.data.after.data();
+        // Aplanamos la información
+        await globalRef.set({
+          ...itemData,
+          itemId: itemId,
+          originalWishlistId: wishlistId,
+          ownerId: userId,
+          flattenedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
+
+        console.log(
+            `Ítem ${itemId} de la lista ${wishlistId} sincronizado globalmente`,
+        );
+      });
 
 exports.onNewContactRequest = functions.firestore
     .document("users/{senderUserId}/contactRequests/{recipientUserId}")
@@ -164,144 +166,3 @@ exports.onContactRequestStatusUpdate = functions.firestore
 
       return null;
     });
-
-/**
- * Trigger: cuando un contact se crea/actualiza/elimina para un usuario,
- * recalcula sharedWithMe de ese usuario.
- */
-exports.recomputeSharedWithMeOnContactsChange = functions.firestore
-    .document("users/{userId}/contacts/{contactId}")
-    .onWrite(async (change, context) => {
-      const userId = context.params.userId;
-      try {
-        await recomputeSharedWithMe(userId);
-        return null;
-      } catch (err) {
-        functions.logger.error(
-            "Error recomputing sharedWithMe for", userId, err,
-        );
-        throw err;
-      }
-    });
-
-exports.recomputeSharedWithMeOnWishlistsChange = functions.firestore
-    .document("users/{userId}/wishlists/{wishlistId}")
-    .onWrite(async (change, context) => {
-      const userId = context.params.userId;
-      try {
-        const after = change.after.data();
-        (after.sharedWithContactIds || []).forEach(async (contactId) => {
-          functions.logger.info(
-              `Recomputing sharedWithMe for contact ${contactId} 
-              due to wishlist change by ${userId}`,
-          );
-          await recomputeSharedWithMe(contactId);
-        });
-        return null;
-      } catch (err) {
-        functions.logger.error(
-            "Error recomputing sharedWithMe for", userId, err,
-        );
-        throw err;
-      }
-    });
-
-/**
- * Recalcula el campo sharedWithMe para un usuario dado.
- * @param {userId} userId
- * @return {void}
- */
-async function recomputeSharedWithMe(userId) {
-  functions.logger.info("function recomputeSharedWithMe");
-  const previousSnap = await admin
-      .firestore()
-      .collection("users")
-      .doc(userId)
-      .collection("sharedWithMe")
-      .get();
-  const previousSharedWithMeIds =
-      new Set(previousSnap.docs.map((doc) => doc.id));
-
-  functions.logger.info(
-      `Previous sharedWithMe IDs for user ${userId}: `,
-      Array.from(previousSharedWithMeIds),
-  );
-  const contactsRef = admin
-      .firestore()
-      .collection("users")
-      .doc(userId)
-      .collection("contacts")
-      .where("status", "==", "accepted");
-  const contactsSnap = await contactsRef.get();
-  functions.logger.info(
-      `User ${userId} has ${contactsSnap.size} contacts:`,
-      contactsSnap.docs,
-  );
-
-  if (contactsSnap.empty) {
-    await admin
-        .firestore()
-        .collection("users")
-        .doc(userId)
-        .update({
-          sharedWithMe: [],
-          sharedWithMeLastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-        });
-    return;
-  }
-
-  const wishlistEntries = {};
-  const includedSharedWithMeIds = new Set();
-
-  for (const contactDoc of contactsSnap.docs) {
-    const contactId = contactDoc.id;
-    const name =
-      contactDoc.data().name || contactDoc.data().email;
-
-    // Consulta las wishlists del contacto que estén compartidas con userId
-    const wlSnap = await admin
-        .firestore()
-        .collection("users")
-        .doc(contactId)
-        .collection("wishlists")
-        .where("sharedWithContactIds", "array-contains", userId)
-        .get();
-
-    for (const doc of wlSnap.docs) {
-      const data = doc.data();
-      const sharedDoc = admin.firestore()
-          .collection("users")
-          .doc(userId)
-          .collection("sharedWithMe")
-          .doc(doc.id);
-      sharedDoc.set({
-        id: doc.id,
-        name: data.name || "",
-        ownerId: data.ownerId || contactId,
-        ownerName: name,
-        privacy: data.privacy || "",
-        // añade aquí otros campos si los necesitas
-        path: doc.ref.path,
-        ref: doc.ref,
-      }, {merge: true});
-      includedSharedWithMeIds.add(doc.id);
-    }
-    previousSharedWithMeIds
-        .difference(includedSharedWithMeIds)
-        .forEach(async (removedId) => {
-          const removedDoc = admin.firestore()
-              .collection("users")
-              .doc(userId)
-              .collection("sharedWithMe")
-              .doc(removedId);
-          await removedDoc.delete();
-        });
-  }
-  const sharedWithMeArray = Array.from(wishlistEntries.values());
-  await admin
-      .firestore()
-      .collection("users").doc(userId).update({
-        sharedWithMe: sharedWithMeArray,
-        sharedWithMeLastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-      });
-}

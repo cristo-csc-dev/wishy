@@ -1,0 +1,38 @@
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { getFirestore } = require("firebase-admin/firestore");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
+const db = getFirestore();
+
+// Escuchamos los cambios en el nivel más profundo: los ítems
+exports.syncItemsToGlobalList = onDocumentWritten("users/{userId}/wishlists/{wishlistId}/items/{itemId}", async (event) => {
+    
+    // Extraemos los IDs de la ruta
+    const { userId, wishlistId, itemId } = event.params;
+    
+    // Referencia al documento en la colección aplanada global
+    // Usamos el itemId como ID del documento para evitar duplicados
+    const globalRef = db.collection("all_wishes_global").doc(itemId);
+
+    // 1. Manejo de ELIMINACIÓN
+    if (!event.data.after.exists) {
+        await globalRef.delete();
+        console.log(`Ítem ${itemId} eliminado de la lista global.`);
+        return;
+    }
+
+    // 2. Manejo de CREACIÓN o ACTUALIZACIÓN
+    const itemData = event.data.after.data();
+    
+    // Aplanamos la información
+    await globalRef.set({
+        ...itemData,
+        itemId: itemId,          // ID del ítem
+        originalWishlistId: wishlistId, // Para saber a qué lista pertenece
+        ownerId: userId,         // Para saber a qué usuario pertenece
+        flattenedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    console.log(`Ítem ${itemId} de la lista ${wishlistId} sincronizado globalmente.`);
+});
