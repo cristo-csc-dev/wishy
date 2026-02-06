@@ -122,7 +122,7 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
               },
               routes: [
                 GoRoute(
-                  path: '/edit/:contactId',
+                  path: '/edit',
                   builder: (context, state) {
                     final contactId = state.pathParameters['contactId'] ?? '';
                     return EditContactScreen(contactId: contactId);
