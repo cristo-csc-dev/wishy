@@ -19,6 +19,7 @@ import 'package:wishy/screens/notification/notification_list_screen.dart';
 import 'package:wishy/screens/wish/add_wish_screen.dart';
 import 'package:wishy/screens/contacts/friend_list_overview_screen.dart';
 import 'package:wishy/static/available_wishlist_icons.dart';
+import 'package:wishy/widgets/contact_avatar.dart';
 import 'package:wishy/widgets/wish_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -58,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Wishy'),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.person),
+            icon: _getDrawerHeader(UserAuth().isUserAuthenticated() ? UserAuth().getCurrentUser() : null).currentAccountPicture!,
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
@@ -185,31 +186,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAppDrawer() {
-    final user = _auth.currentUser;
 
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
-          UserAccountsDrawerHeader(
-            accountName: Text(user?.displayName ?? "Nombre de Usuario"),
-            accountEmail: Text(user?.email ?? ""),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage:
-                  user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
-              child: user?.photoURL == null
-                  ? const Icon(
-                      Icons.person_outline,
-                      size: 40,
-                      color: Colors.blueGrey,
-                    )
-                  : null,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.blueGrey,
-            ),
-          ),
+          _getDrawerHeader(UserAuth().isUserAuthenticated() ? UserAuth().getCurrentUser() : null),
           ListTile(
             leading: const Icon(Icons.edit, color: Colors.indigo),
             title: const Text('Perfil'),
@@ -250,6 +232,28 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  _getDrawerHeader(User? user) {
+    return UserAccountsDrawerHeader(
+      accountName: Text(user?.displayName ?? "Nombre de Usuario"),
+      accountEmail: Text(user?.email ?? ""),
+      currentAccountPicture: CircleAvatar(
+        backgroundColor: Colors.white,
+        backgroundImage:
+            user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
+        child: user?.photoURL == null
+            ? const Icon(
+                Icons.person_outline,
+                size: 40,
+                color: Colors.blueGrey,
+              )
+            : null,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.blueGrey,
       ),
     );
   }

@@ -206,33 +206,6 @@ class _WishCardState extends State<WishCard> {
                               color: Colors.grey,
                             ),
                           ),
-                          Positioned(
-                            right: 6,
-                            bottom: 6,
-                            child: Material(
-                              color: Colors.white.withOpacity(0.95),
-                              shape: const CircleBorder(),
-                              elevation: 2,
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: () {
-                                  final url = (wishItem.productUrl != null &&
-                                          wishItem.productUrl!.isNotEmpty)
-                                      ? wishItem.productUrl!
-                                      : 'https://www.google.com/search?q=${Uri.encodeComponent(wishItem.name)}';
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => WebViewCapture(initialUrl: url),
-                                    ),
-                                  );
-                                },
-                                child: const Padding(
-                                  padding: EdgeInsets.all(8.0),
-                                  child: Icon(Icons.search, size: 20, color: Colors.blueGrey),
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),

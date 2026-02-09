@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class ContactAvatar extends StatelessWidget {
 
-  static const double low = 24.0;
+  static const double small = 24.0;
   static const double medium = 40.0;
   static const double high = 60.0;
 
@@ -15,7 +15,7 @@ class ContactAvatar extends StatelessWidget {
     super.key, 
     required this.contactId,
     required this.displayName,
-    this.radius = low,
+    this.radius = small,
   });
 
   @override
