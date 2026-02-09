@@ -158,6 +158,7 @@ class _AddWishScreenState extends State<AddWishScreen> {
       suggestedStore: _storeController.text,
       notes: _notesController.text,
       priority: _selectedPriority,
+      imageUrl: _wishItem?.imageUrl,
     );
 
     try {
