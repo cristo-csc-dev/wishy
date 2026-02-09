@@ -307,7 +307,7 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
               onPressed: () {
                 // Usamos la ruta de edición dentro de "mis listas"
                 context.go(
-                  '/home/wishlists/mine/${widget.wishListId}/wish/${widget.wishItemId}/edit',
+                  '/home/wishlists/mine/${widget.wishListId}/wish/${widget.wishItemId}/editFromList',
                 );
               },
             ),

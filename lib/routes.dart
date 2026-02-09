@@ -155,67 +155,76 @@ GoRouter getRouter(UserAuth userAuth) => GoRouter(
         GoRoute(
           path: '/wishlists/mine',
           builder: (context, state) => const MyListsOverviewScreen(),
-        ),
-        GoRoute(
-          path: '/wishlists/mine/add',
-          builder: (context, state) => const CreateEditListScreen(),
-        ),
-        GoRoute(
-          path: '/wishlists/mine/:wishlistId/editFromList',
-          builder: (context, state) {
-            final wishListId = state.pathParameters['wishlistId'] ?? '';
-            return CreateEditListScreen(wishListId: wishListId);
-          },
-        ),
-        GoRoute(
-          path: '/wishlists/mine/:wishlistId',
-          builder: (context, state) {
-            final wishListId = state.pathParameters['wishlistId'] ?? '';
-            return ListDetailScreen(
-              wishListId: wishListId,
-              userId: UserAuth.instance.getCurrentUser().uid,
-            );
-          },
           routes: [
+            GoRoute(path: "/add", builder: (context, state) => const CreateEditListScreen()),
             GoRoute(
-              path: '/edit',
+              path: '/:wishlistId',
+              builder: (context, state) {
+                final wishListId = state.pathParameters['wishlistId'] ?? '';
+                return ListDetailScreen(
+                  wishListId: wishListId,
+                  userId: UserAuth.instance.getCurrentUser().uid,
+                );
+              },
+              routes: [
+                GoRoute(
+                  path: '/edit',
+                  builder: (context, state) {
+                    final wishListId = state.pathParameters['wishlistId'] ?? '';
+                    return CreateEditListScreen(wishListId: wishListId);
+                  },
+                ),
+
+                GoRoute(
+                  path: '/wish/add',
+                  builder: (context, state) {
+                    final wishListId = state.pathParameters['wishlistId'] ?? '';
+                    return AddWishScreen(wishListId: wishListId);
+                  },
+                ),
+                GoRoute(
+                  path: '/wish/:wishId/detail',
+                  builder: (context, state) {
+                    final wishListId = state.pathParameters['wishlistId'] ?? '';
+                    final wishId = state.pathParameters['wishId'] ?? '';
+                    return WishDetailScreen(
+                      userId: UserAuth.instance.getCurrentUser().uid,
+                      wishListId: wishListId,
+                      wishItemId: wishId,
+                    );
+                  },
+                  routes: [
+                    GoRoute(path: '/edit', builder: (context, state) {
+                      final wishListId = state.pathParameters['wishlistId'] ?? '';
+                      final wishId = state.pathParameters['wishId'] ?? '';
+                      return AddWishScreen(
+                        wishListId: wishListId,
+                        wishItemId: wishId,
+                      );
+                    }),
+                  ]
+                ),
+                GoRoute(
+                  path: '/wish/:wishId/editFromList',
+                  builder: (context, state) {
+                    final wishListId = state.pathParameters['wishlistId'] ?? '';
+                    final wishId = state.pathParameters['wishId'] ?? '';
+                    return AddWishScreen(
+                      wishItemId: wishId,
+                      wishListId: wishListId,
+                    );
+                  },
+                ),
+              ]
+            ),
+            GoRoute(
+              path: '/:wishlistId/editFromList',
               builder: (context, state) {
                 final wishListId = state.pathParameters['wishlistId'] ?? '';
                 return CreateEditListScreen(wishListId: wishListId);
               },
             ),
-
-            GoRoute(
-              path: '/wish/add',
-              builder: (context, state) {
-                final wishListId = state.pathParameters['wishlistId'] ?? '';
-                return AddWishScreen(wishListId: wishListId);
-              },
-            ),
-            GoRoute(
-              path: '/wish/:wishId/detail',
-              builder: (context, state) {
-                final wishListId = state.pathParameters['wishlistId'] ?? '';
-                final wishId = state.pathParameters['wishId'] ?? '';
-                return WishDetailScreen(
-                  userId: UserAuth.instance.getCurrentUser().uid,
-                  wishListId: wishListId,
-                  wishItemId: wishId,
-                );
-              },
-            ),
-            GoRoute(
-              path: '/wish/:wishId/edit',
-              builder: (context, state) {
-                final wishListId = state.pathParameters['wishlistId'] ?? '';
-                final wishId = state.pathParameters['wishId'] ?? '';
-                return AddWishScreen(
-                  wishItemId: wishId,
-                  wishListId: wishListId,
-                );
-              },
-            ),
-          ]
+          ],
         ),
       ],
     ),

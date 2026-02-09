@@ -63,7 +63,10 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
       _nameController = TextEditingController(text: _wishList?.name ?? '');
       _selectedPrivacy = _wishList?.privacy ?? ListPrivacy.private;
       _selectedContactIds = List.from(_wishList?.sharedWithContactIds ?? []);
-    
+      _selectedAssetPath = _wishList?.iconKey != null && availableIcons.containsKey(_wishList!.iconKey) && availableIcons[_wishList!.iconKey]!['type'] == 'asset'
+        ? availableIcons[_wishList!.iconKey]!['path'] as String
+        : null;
+      _selectedKey = _wishList?.iconKey;
       _isLoading = false;
     });
   }
@@ -197,13 +200,13 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
                       ? Colors.transparent 
                       : (_selectedColorValue != null ? Color(_selectedColorValue!).withOpacity(0.1) : Theme.of(context).colorScheme.primary.withOpacity(0.1)),
                   backgroundImage: _selectedAssetPath != null ? AssetImage(_selectedAssetPath!) : null,
-                  child: _selectedAssetPath == null 
-                      ? Icon(
-                          Icons.card_giftcard,
-                          size: 40,
-                          color: _selectedColorValue != null ? Color(_selectedColorValue!) : Theme.of(context).colorScheme.primary,
-                        )
-                      : null,
+                  child: _selectedAssetPath != null ?
+                    Image(image: AssetImage(_selectedAssetPath!))
+                    : Icon(
+                      Icons.card_giftcard,
+                      size: 40,
+                      color: _selectedColorValue != null ? Color(_selectedColorValue!) : Theme.of(context).colorScheme.primary,
+                    ),
                 ),
               ),
               const SizedBox(height: 16),

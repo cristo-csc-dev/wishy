@@ -58,7 +58,7 @@ class _MyListsOverviewScreenState extends State<MyListsOverviewScreen> {
                   context.go('/home/wishlists/mine/${list.id}');
                 },
                 onEdit: () async {
-                  context.go('/home/wishlists/mine/${list.id}/edit');
+                  context.go('/home/wishlists/mine/${list.id}/editFromList');
                 },
                 onShare: () {
                   ScaffoldMessenger.of(context).showSnackBar(
