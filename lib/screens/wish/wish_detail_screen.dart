@@ -70,24 +70,6 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
     }
   }
 
-  // Reutilizamos la lógica de prioridad de tu AddWishScreen para la etiqueta
-  String _getPriorityLabel(int priority) {
-    switch (priority) {
-      case 1:
-        return 'Baja';
-      case 2:
-        return 'Normal';
-      case 3:
-        return 'Media';
-      case 4:
-        return 'Alta';
-      case 5:
-        return 'Imprescindible';
-      default:
-        return 'Media';
-    }
-  }
-
   // Helper para mostrar un ítem de detalle
   Widget _buildDetailItem(String title, String? value, {bool isUrl = false}) {
     if (value == null || value.isEmpty) {
@@ -141,35 +123,15 @@ class _WishDetailScreenState extends State<WishDetailScreen> {
 
   // Helper para generar el widget de prioridad
   Widget _buildPriorityTag(int priority) {
-    final label = _getPriorityLabel(priority);
-    Color color;
-
-    switch (priority) {
-      case 5:
-        color = Colors.red.shade700;
-        break;
-      case 4:
-        color = Colors.orange.shade700;
-        break;
-      case 3:
-        color = Colors.indigo.shade500;
-        break;
-      default:
-        color = Colors.green.shade500;
-        break;
-    }
-
-    return Chip(
-      label: Text(
-        'Prioridad: $label',
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      backgroundColor: color,
-      avatar: const Icon(Icons.star, color: Colors.white, size: 18),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < priority ? Icons.star : Icons.star_border,
+          color: Colors.amber,
+          size: 32,
+        );
+      }),
     );
   }
 
