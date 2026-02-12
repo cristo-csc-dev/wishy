@@ -196,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.edit, color: Colors.indigo),
             title: const Text('Perfil'),
             onTap: () {
+              Navigator.pop(context); 
               context.go('/home/profile');
             },
           ),
@@ -203,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.list, color: Colors.indigo),
             title: const Text('Mis listas'),
             onTap: () {
+              Navigator.pop(context); 
               context.go('/home/wishlists/mine');
             },
           ),
@@ -210,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.card_giftcard, color: Colors.indigo),
             title: const Text('Los tengo!'),
             onTap: () {
-              // Navegar a la pantalla de 'Los tengo'
+              Navigator.pop(context);
               context.go('/home/ihaveit');
             },
           ),
@@ -219,6 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const Icon(Icons.people, color: Colors.indigo),
             title: const Text('Contactos'),
             onTap: () {
+              Navigator.pop(context); 
               context.go('/home/contacts');
             },
           ),
