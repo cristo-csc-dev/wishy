@@ -1,4 +1,5 @@
 // lib/screens/event_detail_screen.dart
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:wishy/auth/user_auth.dart';
@@ -262,12 +263,21 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               children: _currentEvent.participantUserIds.map((userId) {
                 // Simulación para obtener nombre del contacto
                 final contact = Contact(id: userId, name: 'Tú' /* o "Usuario Desconocido" */, email: '');
-                return Chip(
+                return Chip( // Usamos CachedNetworkImage para una carga y caché eficientes de avatares.
                   avatar: CircleAvatar(
-                    backgroundImage: contact.avatarUrl != null ? NetworkImage(contact.avatarUrl!) : null,
-                    child: contact.avatarUrl == null ? const Icon(Icons.person_outline) : null,
+                    backgroundColor: Colors.grey.shade200,
+                    child: (contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty)
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: contact.avatarUrl!,
+                              placeholder: (context, url) => const SizedBox.shrink(), // Muestra el backgroundColor del avatar mientras carga
+                              errorWidget: (context, url, error) => const Icon(Icons.person_outline), // Icono en caso de error
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : const Icon(Icons.person_outline),
                   ),
-                  label: Text(contact.name?? '--'),
+                  label: Text(contact.name ?? '--'),
                 );
               }).toList(),
             ),
